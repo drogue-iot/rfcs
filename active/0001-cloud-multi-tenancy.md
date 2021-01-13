@@ -598,6 +598,20 @@ be isolated by default. It would still be possible to re-use components like the
 When re-using the same Kafka topic, that would also mean that still a "tenant ID" would need to be introduced, and thus
 this would still have an impact in the current implementation.
 
+### Kafka topic per tenant
+
+Instead of having a single Kafka topic for all events of all tenants, it would also be possible to use a per-tenant
+Kafka topic.
+
+The downside of that approach is, that we would also need to send events from the endpoints to different Kafka topics,
+which might it more complex. Currently, each endpoint would receive one `K_SINK`, which it would send events to. Having
+a topic per tenant, we would need to dynamically address and create/delete Kafka topics.
+
+Assuming we allow of an alternative to Kafka (like in-memory), that would make it even more complex. That would also
+add a bit of overhead per tenant.
+
+On the pro side, we would isolate events better, and might even allow tenant access to the Kafka topic.
+
 ## Unresolved topics
 
 ### Naming: "Tenant" vs "Namespace" vs "Project" vs "Application"
@@ -615,7 +629,16 @@ arise inside the Drogue IoT cloud codebase.
 
 ### Consuming data
 
--> Kafka user separation issue
+Multiple tenants share the internal Kafka topic (assuming we do not have a per-tenant topic as described in the
+"Alternatives" section). This means that we cannot give the tenant access to the Kafka topic (which might be good
+for other reasons as well).
+
+However, the user/tenant needs a ways to consume the data from that Kafka topic.
+
+One idea is that provide "integrations", which would for example forward messages to an HTTP endpoint of your choice
+using CloudEvents. This would allow filtering out events by tenant.
+
+This is out of scope for this RFC and is planned to be implemented in the future.
 
 ## Glossary
 
