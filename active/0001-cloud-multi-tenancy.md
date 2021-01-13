@@ -30,6 +30,16 @@ it makes too much sense to split off this topic, and then re-iterate over it in 
 * This approach does not support inter-scope/inter-tenant communication by itself.
 * Support X.509 client certificate authentication for devices.
 
+### Tenants own their devices
+
+A tenant owns/contains its devices. That means that as soon as a tenant is being deleted, its devices must be deleted
+as well.
+
+It is ok to "soft delete" (mark deleted) the devices or tenant first, if the deletion takes more time/operations,
+than a simple removal of the entry.
+
+Deleting and re-creating a tenant with the same ID must not bring back the devices previously owned by the tenant.
+
 ### Use case: Replace device, keep stable ID
 
 It should be possible to replace a physical device (e.g. device ID `d1`) with a new physical device, keeping the same
