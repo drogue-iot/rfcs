@@ -52,6 +52,19 @@ device should continue to be recognized as `d1` by the system.
 
 ## Detailed design
 
+### IDs
+
+Both tenants and devices will have a unique ID. Tenants are unique per-instance. Devices are unique per-tenant.
+
+Tenant IDs:
+  * Must be DNS labels as defined by [RFC1123](https://tools.ietf.org/html/rfc1123)
+  * This is necessary to ensure that we can use this ID for Kubernetes resources as well
+  * Also see: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+
+Device IDs:
+ * contain at most 255 octets
+ * contain only lower case, alphanumeric characters (`a-z`, `0-9`), or any of the following characters: `.:-_/=`
+
 ### Management API / Persistence
 
 For the moment we store the tenant information in the same PostgreSQL instance which we use for devices. We use
@@ -87,7 +100,7 @@ CREATE TABLE tenant_aliases (
 );
 
 CREATE TABLE devices (
-    ID           VARCHAR(64) NOT NULL,
+    ID           VARCHAR(256) NOT NULL,
     TENANT_ID    VARCHAR(64) NOT NULL,
 
     DATA JSONB,
@@ -98,7 +111,7 @@ CREATE TABLE devices (
 
 CREATE TABLE device_aliases (
     ALIAS       VARCHAR(256) NOT NULL,
-    ID          VARCHAR(64) NOT NULL,
+    ID          VARCHAR(256) NOT NULL,
     TENANT_ID   VARCHAR(64) NOT NULL,
 
     PRIMARY KEY (ALIAS, TENANT_ID),
@@ -495,9 +508,17 @@ Possible future modes:
 
 #### Publishing events
 
-* All tenants share the same Kafka topic. Events get published as:
+* Each tenant has its own KNative eventing based delivery endpoint. The focus is on this being a Knative `KafkaChannel`.
+  In theory, this could be any Knative eventing endpoint. Events get published as a CloudEvent:
   * `subject` – The device ID
-  * `tenant`– The tenant ID
+
+* As each tenant has its own endpoint, the tenant information is not part of the event.
+
+* Currently, we do not auto-provision/auto-create Kafka channels/topics. This feature will be added in the upcoming
+  device registry work.
+
+* Initially we will use a simple template string approach to generate the name of the service name to contact. Something
+  like: `https://{}-kn-channel.drogue-iot.svc.cluster.local`.
 
 * Consumers of the events will get notified by an "exporter". This is future work and for now we continue to
   directly access the Kafka topic. This implies that, for now, no authentication/authorization is being performed.
@@ -552,7 +573,7 @@ We could keep the scope, but ignore it in the primary key constraint. Removing t
 CREATE TABLE device_aliases (
     TYPE        VARCHAR(32) NOT NULL,  -- type of the alias, e.g. 'id'
     ALIAS       VARCHAR(256) NOT NULL, -- value of the alias, e.g. <id>
-    ID          VARCHAR(64) NOT NULL,
+    ID          VARCHAR(256) NOT NULL,
     TENANT_ID   VARCHAR(64) NOT NULL,
 
     PRIMARY KEY (ALIAS, TENANT_ID),
@@ -597,20 +618,6 @@ be isolated by default. It would still be possible to re-use components like the
 
 When re-using the same Kafka topic, that would also mean that still a "tenant ID" would need to be introduced, and thus
 this would still have an impact in the current implementation.
-
-### Kafka topic per tenant
-
-Instead of having a single Kafka topic for all events of all tenants, it would also be possible to use a per-tenant
-Kafka topic.
-
-The downside of that approach is, that we would also need to send events from the endpoints to different Kafka topics,
-which might it more complex. Currently, each endpoint would receive one `K_SINK`, which it would send events to. Having
-a topic per tenant, we would need to dynamically address and create/delete Kafka topics.
-
-Assuming we allow of an alternative to Kafka (like in-memory), that would make it even more complex. That would also
-add a bit of overhead per tenant.
-
-On the pro side, we would isolate events better, and might even allow tenant access to the Kafka topic.
 
 ## Unresolved topics
 
