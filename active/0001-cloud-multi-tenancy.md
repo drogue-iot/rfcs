@@ -14,9 +14,10 @@ single user has access to multiple scopes. Or that a single scope is accessible 
 
 The main goal here is to share resources between tenants and reduce the overall resource usage on the cluster.
 
-For example: Spinning up a Kafka cluster with 3 replicas would require at least: 3x Zookeeper, 3x Kafka. Consuming these
+For example: Spinning up an HA Kafka cluster would require at least: 3x Zookeeper, 3x Kafka. Consuming these
 amounts of resources for a single "free tier tenant", which might only be allowed to create a hand full of devices
-in the system, is just not practical.
+in the system, is just not practical. Even for the relatively low-resource protocol endpoints, it would mean that
+1.000 free-tier tenants would consume at last 16MiB * 3 (MQTT, HTTP, Auth) * 1.000 = ~46 GiB.
 
 *Side note:* A good portion of this document is about *device identities*. However, this is a pre-requisite and
 integral part of multi-tenancy, as the tenant information is an important part of the tenant scope. So I don't think
@@ -62,8 +63,13 @@ Tenant IDs:
   * Also see: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
 
 Device IDs:
+ * contain at least 1 octet
  * contain at most 255 octets
- * contain only lower case, alphanumeric characters (`a-z`, `0-9`), or any of the following characters: `.:-_/=`
+ * must conform to UTF-8
+ * **Note:** While it is possible to name your device "Device 🦄" or "::::", it might not be a wise choice to do so,
+   as some APIs might require you to escape non-ASCII characters. Still, technically it is possible. You should also
+   think about this in the context of Unicode normalization. The system will not normalize IDs in any step of
+   processing.
 
 ### Management API / Persistence
 
@@ -659,6 +665,6 @@ This is out of scope for this RFC and is planned to be implemented in the future
 * *User* – A person accessing the system. Identified by some kind of credentials. Might also be another service.
   Alternative terms: "account".
 * *Tenant* – A construct to isolate, scope devices into a group. Data and configuration is not shared between different
-  tenants. Alternative terms: "(device) scope", "namespace". Also see below: [Unresolved topic – Naming](#naming-tenant-vs-namespace-vs-project)
+  tenants. Alternative terms: "(device) scope", "namespace". Also see below: [Unresolved topic – Naming](#naming-tenant-vs-namespace-vs-project-vs-application)
 * *Instance* – An instance of the whole deployment, serving multiple tenants.
 * *Cluster* – A Kubernetes cluster, possibly running other workload as well.
