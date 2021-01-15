@@ -98,7 +98,8 @@ CREATE TABLE tenants (
 );
 
 CREATE TABLE tenant_aliases (
-    ALIAS   VARCHAR(256) NOT NULL,
+    TYPE    VARCHAR(32) NOT NULL,  -- type of the alias, e.g. 'id'
+    ALIAS   VARCHAR(256) NOT NULL, -- value of the alias, e.g. <id>
     ID      VARCHAR(64) NOT NULL,
     
     PRIMARY KEY (ALIAS),
@@ -116,7 +117,8 @@ CREATE TABLE devices (
 );
 
 CREATE TABLE device_aliases (
-    ALIAS       VARCHAR(256) NOT NULL,
+    TYPE        VARCHAR(32) NOT NULL,  -- type of the alias, e.g. 'id'
+    ALIAS       VARCHAR(256) NOT NULL, -- value of the alias, e.g. <id>
     ID          VARCHAR(256) NOT NULL,
     TENANT_ID   VARCHAR(64) NOT NULL,
 
@@ -131,15 +133,15 @@ CREATE TABLE device_aliases (
 A tenant or device can be referenced by ID, or looked up using an alias. Aliases must be unique, like the primary key
 of the entity.
 
-An alias consists of a type and an ID value. Depending on the context of the usage, the alias can be stored in
-explicit for (different fields) or string concatenated form.
-
-**TODO:** Figure out which form to use for the database. Explicit form actually separates information in different
-fields, while the concatenated form might make it easier to `SELECT … ALIAS IN (?)`.
+An alias consists of a type and an ID value. The type is purely informational and used to provider better information
+in case of alias conflicts.
 
 The system populates the aliases automatically from the content of the entity with every change. A unique key violation
-on the alias is treated as a conflict on the manipulating operation. A default `id` type entry with the entity ID is
-always added:
+on the alias is treated as a conflict on the manipulating operation.
+
+A duplicate alias for the targeting the same ID is ignored.
+
+A default `id` type entry with the entity ID is always added:
 
 ~~~yaml
 tenants:
@@ -161,10 +163,10 @@ TENANTS
 ---
 TENANT_ALIASES
 ---
-"ALIAS", "ID"
+"TYPE", "ALIAS", "ID"
 ---
-"id:tenant1", "tenant1"
-"id:tenant2", "tenant2"
+"id", "tenant1", "tenant1"
+"id", "tenant2", "tenant2"
 ~~~
 
 For devices this might look like:
@@ -194,11 +196,11 @@ DEVICES
 ---
 DEVICE_ALIASES
 ---
-"ALIAS", "ID", "TENANT_ID"
+"TYPE", "ALIAS", "ID", "TENANT_ID"
 ---
-"id:device1", "device1", tenant1"
-"id:device2", "device2", tenant1"
-"id:device1", "device1", tenant2"
+"id", "device1", "device1", tenant1"
+"id", "device2", "device2", tenant1"
+"id", "device1", "device1", tenant2"
 ~~~
 
 Adding, for example, a unique username to a device, might look like this:
@@ -226,10 +228,36 @@ DEVICES
 ---
 DEVICE_ALIASES
 ---
-"ALIAS", "ID", "TENANT_ID"
+"TYPE", "ALIAS", "ID", "TENANT_ID"
 ---
-"id:device1",    "device1", "tenant1"
-"username:mac1", "device1", "tenant1"
+"id",       "device1", "device1", "tenant1"
+"username", "mac1",    "device1", "tenant1"
+~~~
+
+A duplicate "local" alias would cause no problem:
+
+~~~yaml
+devices:
+  - id: device1
+    tenant: tenant1
+    credentials:
+      - username: device1
+        password: foo
+        unique: true
+      - username: device1
+        password: foo2
+        unique: true
+~~~
+
+Would result in the following list:
+
+~~~
+---
+DEVICE_ALIASES
+---
+"TYPE", "ALIAS", "ID", "TENANT_ID"
+---
+"id", "device1", "device1", "tenant1"
 ~~~
 
 #### Manually defined aliases
@@ -256,38 +284,58 @@ TENANTS
 ---
 TENANT_ALIASES
 ---
-"ALIAS", "ID"
+"TYPE", "ALIAS", "ID"
 ---
-"id:tenant1", "tenant1"
-"id:tenant2", "tenant1"
+"id", "tenant1", "tenant1"
+"id", "tenant2", "tenant1"
 ~~~
 
 Note that this would only be used when looking up a tenant. When a tenant is directly referenced only `tenant1` would
 work. Also, would the lookup process return `tenant1` in both cases.
 
+#### Alias conflicts
+
+Creating those unique aliases might create conflicts. These conflicts are expected and operations creating conflicts
+will be rejected by the system.
+
+For example: Creating a device `d1` and creating a device `d2` with a unique username of `d1` would cause a conflict.
+So it is not possible to add a unique username of `d2` that already is used otherwise in the system.
+
+As devices are unique within the scope of a tenant, tenants are unique in the scope of an instance. So more care has
+to be taken defining aliases for tenants as that may block others from using the ID.
+
+For example: A tenant of "Bar Inc" could create a trust anchor for `O=Foo Inc`, blocking "Foo Inc" from creating an
+appropriate trust anchor. There are two possible solutions for this:
+
+1) An approval process is used to ensure that a trust anchor only gets activated (and thus the alias created) after
+   a manual control of the trust anchor.
+2) A dedicated instance is used so that a user can self manage all aspects of the tenant configuration. 
+
 #### More alias examples
 
 ##### Example #1: Custom endpoint hostname
 
-A tenant is configured with a dedicated hostname: `mqtt.my.corp`. That would result in an additional ID like:
+A tenant is configured with a dedicated hostname: `mqtt.my.corp`. That would result in an additional alias:
 
-* `host:mytt.my.corp`.
+* `mytt.my.corp`.
 
 ##### Example #2: Device subject name
 
-A device's certificate has a subject name of `CN=device1,O=Foo,OU=Bar`. That would result in the additional ID:
+A device's certificate has a subject name of `CN=device1,O=Foo,OU=Bar`. That would result in the additional alias:
 
-* `cert/subjectDn:CN=device1,O=Foo,OU=Bar`
+* `CN=device1,O=Foo,OU=Bar`
+
+**Note:** The alias would be case-sensitive.
 
 ##### Example #3: Unique device username
 
 Assuming you have a device with id `device1`, a username/password secret of `foo/bar` and a unique username/password
-of `user1/pass`, then the device would have the following IDs:
+of `user1/pass`, then the device would have the following aliases:
 
-* `id:device1`
-* `username:user1`
+* `device1`
+* `user1`
 
-**Note:** The combination `foo/bar` does not manifest as an ID, as it is a non-unique username/password credential
+**Note:** The combination `foo/bar` does not manifest as an alias, as it is a non-unique username/password credential
 specific to this device.
 
 ### Credentials / Secrets
@@ -300,7 +348,7 @@ Currently, the following types are available:
   an additional ID for the device. This implies that only one device may have the username assigned. Create the same
   entry for a different device will cause an error. Creating an additional entry, with the same unique username but
   a different password for the same device is fine though.
-* PSK/Token – A secret, with no username. This is typically some random byte array.
+* PSK/Token/Password only – A secret, with no username. This is typically some random byte array.
 * X.509 Client certificate – The tenant may have a list of X.509 trust anchors. A possible mode of operation is to
   extract the "subjectDn" of a trust anchor as additional tenant ID. In that case the subject DN of the trust anchor
   (the issuer DN of the client certificate) can be used to look up the client, however that also means that the
@@ -366,18 +414,13 @@ The authentication service will receive a request in the form of:
 ~~~rust
 enum Credential {
   UsernamePassword(String,String),
-  Token(String),
+  PSK(String), // Actually Password(String) 
   Certificate(X509Certificate),
 }
 
-struct Id {
-  pub scope: String,
-  pub id: String,
-}
-
 struct Request {
-  pub tenants: Vec<Id>,
-  pub devices: Vec<Id>,
+  pub tenants: Vec<String>,
+  pub device: String,
   pub credentials: Credential,
 }
 ~~~
@@ -386,26 +429,19 @@ The authentication service will expand the list of tenants and devices and try t
 request:
 
 ~~~yaml
-tenants: ["id:tenant1", "host:foo"]
-devices: ["id:device1", "username:mac1"]
+tenants: ["tenant1", "foo"]
+device: "device1"
 ~~~
 
 That would result in trying the following combinations:
 
 ~~~yaml
-- tenant: "id:tenant1"
-  device: "id:device1"
-- tenant: "id:tenant1"
-  device: "username:mac1"
-- tenant: "host:foo"
-  device: "id:device1"
-- tenant: "host:foo"
-  device: "username:mac1"
+devices:
+- tenant: "tenant1"
+  device: "device1"
+- tenant: "foo"
+  device: "device1"
 ~~~
-
-As the combinations multiply, requests towards the authentication API, endpoints should consider if adding an additional
-value provides a real benefit. Authorization services could reject requests which expand to a list that is considered
-"too big".
 
 If a combination fails to authenticate, the authorization service must try the next combination. However, it is possible
 for the authorization service to perform the lookup before starting the evaluation. This can be done using a single
@@ -548,11 +584,20 @@ for that behavior. And that is also why we cannot rely on it containing a specif
   * Device ID: `<subjectDn>`
   * Credentials: `Certificate(<certificate>)`
 
-##### Gateway Device
-
-* Username/password `<device>@<tenant>` / `<password>`, Client ID: `???`, Topic: `<channel>/<device>`
+* Client Cert, Client ID: `<device>@<tenant>`, Topic: `<channel>`
   * Tenant ID: `<tenant>`
   * Device ID: `<device>`
+  * Credentials: `Certificate(<certificate>)` # might need additional subjectDn validation
+  * **Note:** Can only be validated after the TLS handshake, would however work without TLS SNI. As we cannot trust
+    the `@` being authoritative, we would always need to check the other option first. Unless we would explicitly reject
+    the `@` character when doing client certs. This might result in false negatives if a random client id would
+    contain a `@`. Maybe that can be made configurable.
+
+##### Gateway Device
+
+* Username/password `<gateway>@<tenant>` / `<password>`, Client ID: `???`, Topic: `<channel>/<device>`
+  * Tenant ID: `<tenant>`
+  * Device ID: `<gateway>`
   * Credentials: `PSK(<password>)`
   * Publish as: `<device>`
 
@@ -567,6 +612,15 @@ for that behavior. And that is also why we cannot rely on it containing a specif
   * Device ID: `<subjectDn>`
   * Credentials: `Certificate(<certificate>)`
   * Publish as: `<device>`
+
+* Client Cert, Client ID: `<gateway>@<tenant>`, Topic: `<channel>`
+  * Tenant ID: `<tenant>`
+  * Device ID: `<gateway>`
+  * Credentials: `Certificate(<certificate>)` # might need additional subjectDn validation
+  * **Note:** Can only be validated after the TLS handshake, would however work without TLS SNI. As we cannot trust
+    the `@` being authoritative, we would always need to check the other option first. Unless we would explicitly reject
+    the `@` character when doing client certs. This might result in false negatives if a random client id would
+    contain a `@`. Maybe that can be made configurable.
 
 #### Hono compatibility
 
@@ -601,86 +655,43 @@ clash in any way with our own API.
 
 ## Alternatives
 
-### Scoped aliases ambiguities
+### Aliases ambiguities
 
 The idea of the alias scopes is to have better control of the IDs. To allow controlling the lookup processing use
 more specific information. However, that might also create some ambiguous situations.
-
-There would be two ways to improve the situation. Both drop the type based scope of the alias.
-
-However, dropping the scope, would also mean, that e.g. a unique username of `mac1` would block you from creating a
-new device with the id `mac1`. On the user side, while that might be more limiting, it might be easier to understand.
 
 It shouldn't be a big deal for devices, as they are mostly under the control of a tenant. However, for tenants that
 might have more impact. So more care must be taken, thinking about the extraction of properties. Because, for example,
 a manual alias might block the "issuer DN" of another tenant.
 
-#### Non-scoped aliases
+#### strong-scoped aliases
 
 Instead of using:
-
-~~~yaml
-- "id:device1"
-- "username:mac1"
-~~~
-
-We could simply use:
 
 ~~~yaml
 - "device1"
 - "mac1"
 ~~~
 
-That would make it less ambiguous when performing to lookup. However, that may cause issues when creating a new device.
-Assume a new device with the ID `mac1` would get created. That must fail, but the only information we would have would
-be that the alias already exists. We couldn't properly deduct "why" it exists. From a data integrity standpoint that
-would be ok. But, it would not be very user-friendly.
-
-#### weak-scoped aliases
-
-We could keep the scope, but ignore it in the primary key constraint. Removing the "type" information from the
-"alias" field, but not adding it to the primary key:
-
-~~~sql
-CREATE TABLE device_aliases (
-    TYPE        VARCHAR(32) NOT NULL,  -- type of the alias, e.g. 'id'
-    ALIAS       VARCHAR(256) NOT NULL, -- value of the alias, e.g. <id>
-    ID          VARCHAR(256) NOT NULL,
-    TENANT_ID   VARCHAR(64) NOT NULL,
-
-    PRIMARY KEY (ALIAS, TENANT_ID),
-    FOREIGN KEY (ID) REFERENCES devices(ID) ON DELETE CASCADE,
-    FOREIGN KEY (TENANT_ID) REFERENCES tenants(ID) ON DELETE CASCADE
-);
-~~~
-
-Creating the following devices:
+We could use:
 
 ~~~yaml
-devices:
-  - id: d1
-    tenant: t1
-  - id: d2
-    tenant: t1
-    credentials:
-      - username: mac1
-        unique: true
+- "id:device1"
+- "username:mac1"
 ~~~
 
-Would result in:
+When performing a lookup, we would actually need to test the full string (or both fields). That would also mean
+that we would need to pass in multiple combinations to the auth service. For example, if basic auth is used, that
+may be `id:<device>` or `username:<device>`, however that may create some overhead and also create some ambiguities
+that are hard to understand.
 
-~~~
----
-DEVICE_ALIASES
----
-"TYPE", "ALIAS", "ID", "TENANT_ID"
----
-"id",       "d1",   "d1", "t1"
-"id",       "d2",   "d2", "t1"
-"username", "mac1", "d2", "t1" 
-~~~
+**Note:** This was the originally used approach in this document.
 
-While it still would be impossible to create a device with the ID `mac1`, a more helpful message could be generated.
+#### Non-scoped aliases
+
+It would also be possible to drop the "type" information altogether. However, that would make it hard to understand
+*why* an alias is blocked. Having that information available would allow better error reporting in the case of
+conflicts for management operations.
 
 ### Instance per tenant
 
@@ -692,6 +703,12 @@ When re-using the same Kafka topic, that would also mean that still a "tenant ID
 this would still have an impact in the current implementation.
 
 ## Unresolved topics
+
+### Locating the tenant for X.509 certificates
+
+Currently, we specify `endpoint` and `subjectDn` when locating a tenant. That means that we would need to two lookups.
+
+We need to double check if that is ok, and if there is an alternative.
 
 ### Naming: "Tenant" vs "Namespace" vs "Project" vs "Application"
 
