@@ -434,81 +434,147 @@ entity.
 
 #### HTTP endpoint
 
-For the HTTP endpoint we initially support the following modes:
+##### Publish as device
 
-* `POST /` with basic auth `<device>@<tenant>` / `<password>`:
-  * Tenant IDs: `id:<tenant>`
-  * Device IDs: `id:<device>`, `username:<device>`
-  * Credentials: `<password>`
-  * Device replacement: Works, by using a different basic auth username part when using a unique username
-* `POST /<tenant>` with basic auth `<user>` / `<password>`:
-  * Tenant IDs: `id:<tenant>`
-  * Device IDs: `id:<user>`, `username:<user>`
-  * Credentials: `<password>`
-  * Device replacement: Works, by using a different basic auth username when using a unique username
-* `POST /<tenant>/<device>` with basic auth `<user>` / `<password>`:
-  * Tenant IDs: `id:<tenant>`
-  * Device IDs: `id:<device>`
-  * Credentials: `<password>`
-  * Device replacement: Would work if we add device aliases.
-* `POST /<tenant>/<device>` with basic auth `<token>`:
-  * Tenant IDs: `id:<tenant>`
-  * Device IDs: `id:<device>`
-  * Credentials: `<token>`
-  * Device replacement: ??need check??
-* `POST /<tenant>/<device>` X.509 client certificate: 
-  * Tenant IDs: `id:<tenant>`
-  * Device IDs: `id:<device>`
-  * Credentials: `<certificate>`
-  * Device replacement: ??need check??
+* `POST /<channel>{/<custom>}` with basic auth `<device>@<tenant>` / `<password>`:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<device>`
+  * Credentials: `PSK(<password>)`
 
-Possible future modes:
+* `POST /<channel>{/<custom>}?tenant=<tenant>` with basic auth `<device>` / `<password>`:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<device>`
+  * Credentials: `PSK(<password>)`
 
-* Hono like approach – `POST /` X.509 client certificate:
-  * Tenant IDs: `host:<endpoint>`, `cert/issuerDn:<issuerDn-1>`, `cert/issuerDn:<issuerDn-2>`, `cert/issuerDn:<issuerDn-n>`
-  * Device IDs: `cert/subjectDn:<subjectDn>`
-  * Credentials: `<certificate>`
-  * Device replacement: ??need check??
+* `POST /<channel>{/<custom>}?tenant=<tenant>&device=<device>` with basic auth `<username>` / `<password>`:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<device>`
+  * Credentials: `UsernamePassword(<username>, <password>)`
 
-#### Hono compatibility
+* `POST /<channel>{/<custom>}?device=<device>` with basic auth `<username>@<tenant>` / `<password>`:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<device>`
+  * Credentials: `UsernamePassword(<username>, <password>)`
 
--> need JB's and Dejan's help here
+* `POST /<channel>{/<custom>}` with client cert:
+  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Device ID: `<subjectDn>`
+  * Credentials: `Certificate(Certificate)`
 
--> I guess X.509 should be covered by the "future modes"
--> Username/password should be covered by the "unique username" feature
+* `POST /<channel>{/<custom>}?tenant=<tenant>` with client cert:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<subjectDn>`
+  * Credentials: `Certificate(Certificate)`
+
+* `POST /<channel>{/<custom>}?tenant=<tenant>&device=<device>` with client cert:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<device>`
+  * Credentials: `Certificate(Certificate)` # might need additional subjectDn validation
+
+* `POST /<channel>{/<custom>}?device=<device>` with client cert:
+  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Device ID: `<device>`
+  * Credentials: `Certificate(Certificate)` # might need additional subjectDn validation
+
+##### Publish as gateway device
+
+* `POST /<channel>{/<custom>}?device=<device>` with basic auth `<gateway>@<tenant>` / `<password>`:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<gateway>`
+  * Credentials: `PSK(<password>)`
+  * Publish as: `<device>`
+
+* `POST /<channel>{/<custom>}?device=<device>&tenant=<tenant>` with basic auth `<gateway>` / `<password>`:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<gateway>`
+  * Credentials: `PSK(<password>)`
+  * Publish as: `<device>`
+
+* `POST /<channel>{/<custom>}?device=<device>&tenant=<tenant>&gateway=<gateway>` with basic auth `<username>` / `<password>`:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<gateway>`
+  * Credentials: `UsernamePassword(<username>, <password>)`
+  * Publish as: `<device>`
+
+* `POST /<channel>{/<custom>}?device=<device>&gateway=<gateway>` with basic auth `<username>@<tenant>` / `<password>`:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<gateway>`
+  * Credentials: `UsernamePassword(<username>, <password>)`
+  * Publish as: `<device>`
+
+* `POST /<channel>{/<custom>}?device=<device>` with client cert:
+  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Device ID: `<subjectDn>`
+  * Credentials: `Certificate(Certificate)`
+  * Publish as: `<device>`
+
+* `POST /<channel>{/<custom>}?device=<device>&tenant=<tenant>` with client cert:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<subjectDn>`
+  * Credentials: `Certificate(Certificate)`
+  * Publish as: `<device>`
+
+* `POST /<channel>{/<custom>}?device=<device>&tenant=<tenant>&gateway=<gateway>` with client cert:
+  * Tenant ID: `<tenant>`
+  * Device ID: `<gateway>`
+  * Credentials: `Certificate(Certificate)` # might need additional subjectDn validation
+  * Publish as: `<device>`
+
+* `POST /<channel>{/<custom>}?device=<device>&gateway=<gateway>` with client cert:
+  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Device ID: `<gateway>`
+  * Credentials: `Certificate(Certificate)` # might need additional subjectDn validation
+  * Publish as: `<device>`
 
 #### MQTT endpoint
 
-For the MQTT endpoint we initially support the following modes:
+**Note:** Many applications default the MQTT client ID to a random string. That is why we should provide good support
+for that behavior. And that is also why we cannot rely on it containing a specific character, like `@`.
 
-* Username/password `<device>@<tenant>` / `<password>`, Client ID: `<client>`
-  * Tenant IDs: `id:<tenant>`
-  * Device IDs: `id:<device>`, `mqtt:<client>`
-  * Credentials: `<password>`
-  * Device replacement: ??need check??
-* Username/password `<tenant>` / `<password>`, Client ID: `<client>`
-  * Tenant IDs: `id:<tenant>`
-  * Device IDs: `id:<client>`, `mqtt:<client>`
-  * Credentials: `<password>`
-  * Device replacement: ??need check??
-* Username/password `<user>` / `<password>`, Client ID: `<device>@<tenant>`:
-  * Tenant IDs: `id:<tenant>`
-  * Device IDs: `id:<device>`, `username:<user>`
-  * Credentials: `<password>`
-  * Device replacement: ??need check??
-* X.509 client certificate, Client ID `<device>@<tenant>`:
-  * Tenant IDs: `id:<tenant>`
-  * Device IDs: `id:<device>`
-  * Credentials: `<certificate>`
-  * Device replacement: ??need check??
+##### Device
 
-Possible future modes:
+* Username/password `<device>@<tenant>` / `<password>`, Client ID: `???`, Topic: `<channel>`
+  * Tenant ID: `<tenant>`
+  * Device ID: `<device>`
+  * Credentials: `PSK(<password>)`
 
-* X.509 client certificate:
-  * Tenant IDs: `host:<endpoint>`, `cert/issuer:<issuerDn-1>`, `cert/issuer:<issuerDn-2>`, `cert/issuer:<issuerDn-n>`
-  * Device IDs: `cert/subject:<subjectDn>`
-  * Credentials: `<certificate>`
-  * Device replacement: ??need check??
+* Username/password `<username>` / `<password>`, Client ID: `<device>@<tenant>`, Topic: `<channel>`
+  * Tenant ID: `<tenant>`
+  * Device ID: `<device>`
+  * Credentials: `UsernamePassword(<username>, <password>)`
+
+* Client Cert, Client ID: `???`, Topic: `<channel>`
+  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Device ID: `<subjectDn>`
+  * Credentials: `Certificate(<certificate>)`
+
+##### Gateway Device
+
+* Username/password `<device>@<tenant>` / `<password>`, Client ID: `???`, Topic: `<channel>/<device>`
+  * Tenant ID: `<tenant>`
+  * Device ID: `<device>`
+  * Credentials: `PSK(<password>)`
+  * Publish as: `<device>`
+
+* Username/password `<username>` / `<password>`, Client ID: `<device>@<tenant>`, Topic: `<channel>/<device>`
+  * Tenant ID: `<tenant>`
+  * Device ID: `<device>`
+  * Credentials: `UsernamePassword(<username>, <password>)`
+  * Publish as: `<device>`
+
+* Client Cert, Client ID: `???`, Topic: `<channel>/<device>`
+  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Device ID: `<subjectDn>`
+  * Credentials: `Certificate(<certificate>)`
+  * Publish as: `<device>`
+
+#### Hono compatibility
+
+The overall goal is to implement the HTTP and MQTT APIs of Hono for the authenticated device and gateway operation.
+Currently, we do not target compatibility with the unauthenticated operations.
+
+As both MQTT and HTTP APIs differ from our own, we will spin up dedicated Hono compatible endpoints. So we do not
+clash in any way with our own API.
 
 ### Data / Events
 
@@ -524,7 +590,7 @@ Possible future modes:
   device registry work.
 
 * Initially we will use a simple template string approach to generate the name of the service name to contact. Something
-  like: `https://{}-kn-channel.drogue-iot.svc.cluster.local`.
+  like: `https://{tenant}-kn-channel.drogue-iot.svc.cluster.local`.
 
 * Consumers of the events will get notified by an "exporter". This is future work and for now we continue to
   directly access the Kafka topic. This implies that, for now, no authentication/authorization is being performed.
@@ -561,8 +627,8 @@ Instead of using:
 We could simply use:
 
 ~~~yaml
-- device1
-- mac1
+- "device1"
+- "mac1"
 ~~~
 
 That would make it less ambiguous when performing to lookup. However, that may cause issues when creating a new device.
