@@ -627,7 +627,7 @@ for that behavior. And that is also why we cannot rely on it containing a specif
 The overall goal is to implement the HTTP and MQTT APIs of Hono for the authenticated device and gateway operation.
 Currently, we do not target compatibility with the unauthenticated operations.
 
-As both MQTT and HTTP APIs differ from our own, we will spin up dedicated Hono compatible endpoints. So we do not
+As both MQTT and HTTP APIs differ from our own, we will spin up dedicated, Hono compatible endpoints. So we do not
 clash in any way with our own API.
 
 ### Data / Events
