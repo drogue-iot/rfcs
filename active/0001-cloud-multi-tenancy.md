@@ -6,6 +6,22 @@ data at the same time.
 * Issue: https://github.com/drogue-iot/drogue-cloud/issues/12
 * PR: https://github.com/drogue-iot/rfcs/pull/1
 
+## Glossary
+
+* *Device* – A device, connecting to the system. Might also be a *gateway device*, communicating on behalf of other
+  devices (edge node). Might also be another *service*, providing connectivity for either devices
+  (e.g. The Things Network, Sigfox).
+* *Gateway device* – A device (for example a non IP enabled device) might use another device for sending data to the
+  cloud. So there is one device the data originates from, and (optionally a different) device the connection
+  originates from. If the data is coming from a different device then the connection, the latter device is called a
+  *gateway device*.
+* *User* – A person accessing the system. Identified by some kind of credentials. Might also be another service.
+  Alternative terms: "account".
+* *Tenant* – A construct to isolate, scope devices into a group. Data and configuration is not shared between different
+  tenants. Alternative terms: "(device) scope", "namespace". Also see below: [Unresolved topic – Naming](#naming-tenant-vs-namespace-vs-project-vs-application)
+* *Instance* – An instance of the whole deployment, serving multiple tenants.
+* *Cluster* – A Kubernetes cluster, possibly running other workload as well.
+
 ## Motivation
 
 We want to have some kind of isolation layer, to be able to host multiple users (tenants) on the same infrastructure.
@@ -736,18 +752,3 @@ using CloudEvents. This would allow filtering out events by tenant.
 
 This is out of scope for this RFC and is planned to be implemented in the future.
 
-## Glossary
-
-* *Device* – A device, connecting to the system. Might also be a *gateway device*, communicating on behalf of other
-  devices (edge node). Might also be another *service*, providing connectivity for either devices
-  (e.g. The Things Network, Sigfox).
-* *Gateway device* – A device (for example a non IP enabled device) might use another device for sending data to the
-  cloud. So there is one device the data originates from, and (optionally a different) device the connection
-  originates from. If the data is coming from a different device then the connection, the latter device is called a
-  *gateway device*.
-* *User* – A person accessing the system. Identified by some kind of credentials. Might also be another service.
-  Alternative terms: "account".
-* *Tenant* – A construct to isolate, scope devices into a group. Data and configuration is not shared between different
-  tenants. Alternative terms: "(device) scope", "namespace". Also see below: [Unresolved topic – Naming](#naming-tenant-vs-namespace-vs-project-vs-application)
-* *Instance* – An instance of the whole deployment, serving multiple tenants.
-* *Cluster* – A Kubernetes cluster, possibly running other workload as well.
