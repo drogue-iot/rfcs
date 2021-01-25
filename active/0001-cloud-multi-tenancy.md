@@ -646,6 +646,8 @@ Currently, we do not target compatibility with the unauthenticated operations.
 As both MQTT and HTTP APIs differ from our own, we will spin up dedicated, Hono compatible endpoints. So we do not
 clash in any way with our own API.
 
+For more information about Hono, see: https://www.eclipse.org/hono/docs/user-guide/
+
 ### Data / Events
 
 #### Publishing events
