@@ -530,53 +530,53 @@ entity.
 
 ##### Publish as gateway device
 
-* `POST /<channel>{/<custom>}?device=<device>` with basic auth `<gateway>@<tenant>` / `<password>`:
+* `POST /<channel>{/<custom>}?as=<as>` with basic auth `<device>@<tenant>` / `<password>`:
   * Tenant ID: `<tenant>`
-  * Device ID: `<gateway>`
+  * Device ID: `<device>`
   * Credentials: `PSK(<password>)`
-  * Publish as: `<device>`
+  * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?device=<device>&tenant=<tenant>` with basic auth `<gateway>` / `<password>`:
+* `POST /<channel>{/<custom>}?as=<as>&tenant=<tenant>` with basic auth `<gateway>` / `<password>`:
   * Tenant ID: `<tenant>`
-  * Device ID: `<gateway>`
+  * Device ID: `<device>`
   * Credentials: `PSK(<password>)`
-  * Publish as: `<device>`
+  * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?device=<device>&tenant=<tenant>&gateway=<gateway>` with basic auth `<username>` / `<password>`:
+* `POST /<channel>{/<custom>}?as=<as>&tenant=<tenant>&gateway=<gateway>` with basic auth `<username>` / `<password>`:
   * Tenant ID: `<tenant>`
-  * Device ID: `<gateway>`
+  * Device ID: `<device>`
   * Credentials: `UsernamePassword(<username>, <password>)`
-  * Publish as: `<device>`
+  * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?device=<device>&gateway=<gateway>` with basic auth `<username>@<tenant>` / `<password>`:
+* `POST /<channel>{/<custom>}?as=<as>&gateway=<gateway>` with basic auth `<username>@<tenant>` / `<password>`:
   * Tenant ID: `<tenant>`
-  * Device ID: `<gateway>`
+  * Device ID: `<device>`
   * Credentials: `UsernamePassword(<username>, <password>)`
-  * Publish as: `<device>`
+  * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?device=<device>` with client cert:
+* `POST /<channel>{/<custom>}?as=<as>` with client cert:
   * Tenant ID: `<endpoint>` | `<issuerDn>`
   * Device ID: `<subjectDn>`
   * Credentials: `Certificate(Certificate)`
-  * Publish as: `<device>`
+  * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?device=<device>&tenant=<tenant>` with client cert:
+* `POST /<channel>{/<custom>}?as=<as>&tenant=<tenant>` with client cert:
   * Tenant ID: `<tenant>`
   * Device ID: `<subjectDn>`
   * Credentials: `Certificate(Certificate)`
-  * Publish as: `<device>`
+  * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?device=<device>&tenant=<tenant>&gateway=<gateway>` with client cert:
+* `POST /<channel>{/<custom>}?as=<as>&tenant=<tenant>&device=<device>` with client cert:
   * Tenant ID: `<tenant>`
-  * Device ID: `<gateway>`
+  * Device ID: `<device>`
   * Credentials: `Certificate(Certificate)` # might need additional subjectDn validation
-  * Publish as: `<device>`
+  * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?device=<device>&gateway=<gateway>` with client cert:
+* `POST /<channel>{/<custom>}?as=<as>&device=<device>` with client cert:
   * Tenant ID: `<endpoint>` | `<issuerDn>`
-  * Device ID: `<gateway>`
+  * Device ID: `<device>`
   * Credentials: `Certificate(Certificate)` # might need additional subjectDn validation
-  * Publish as: `<device>`
+  * Publish as: `<as>`
 
 #### MQTT endpoint
 
