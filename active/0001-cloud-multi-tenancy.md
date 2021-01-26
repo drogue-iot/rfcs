@@ -530,6 +530,10 @@ entity.
 
 ##### Publish as gateway device
 
+Basically it is the same operation as the non-gateway operations. Only the `as` query parameters is added, which carries
+the information for which device the information should be published. There needs to be a check if the device is
+allowed to publish "as the other device".
+
 * `POST /<channel>{/<custom>}?as=<as>` with basic auth `<device>@<tenant>` / `<password>`:
   * Tenant ID: `<tenant>`
   * Device ID: `<device>`
