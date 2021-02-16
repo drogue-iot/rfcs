@@ -17,9 +17,9 @@ data at the same time.
   *gateway device*.
 * *User* – A person accessing the system. Identified by some kind of credentials. Might also be another service.
   Alternative terms: "account".
-* *Tenant* – A construct to isolate, scope devices into a group. Data and configuration is not shared between different
-  tenants. Alternative terms: "(device) scope", "namespace". Also see below: [Unresolved topic – Naming](#naming-tenant-vs-namespace-vs-project-vs-application)
-* *Instance* – An instance of the whole deployment, serving multiple tenants.
+* *Application* – A construct to isolate, scope devices into a group. Data and configuration is not shared between different
+  applications. Alternative terms: "(device) scope", "namespace". Formerly known as "tenant".
+* *Instance* – An instance of the whole deployment, serving multiple applications.
 * *Cluster* – A Kubernetes cluster, possibly running other workload as well.
 
 ## Motivation
@@ -28,34 +28,34 @@ We want to have some kind of isolation layer, to be able to host multiple users 
 Users should not be able to see or interact with the resources of other users. It may however the possible that a
 single user has access to multiple scopes. Or that a single scope is accessible by multiple users.
 
-The main goal here is to share resources between tenants and reduce the overall resource usage on the cluster.
+The main goal here is to share resources between applications and reduce the overall resource usage on the cluster.
 
 For example: Spinning up an HA Kafka cluster would require at least: 3x Zookeeper, 3x Kafka. Consuming these
-amounts of resources for a single "free tier tenant", which might only be allowed to create a hand full of devices
+amounts of resources for a single "free tier applications", which might only be allowed to create a hand full of devices
 in the system, is just not practical. Even for the relatively low-resource protocol endpoints, it would mean that
-1.000 free-tier tenants would consume at last 16MiB * 3 (MQTT, HTTP, Auth) * 1.000 = ~46 GiB.
+1.000 free-tier applications would consume at last 16MiB * 3 (MQTT, HTTP, Auth) * 1.000 = ~46 GiB.
 
 *Side note:* A good portion of this document is about *device identities*. However, this is a pre-requisite and
-integral part of multi-tenancy, as the tenant information is an important part of the tenant scope. So I don't think
+integral part of multi-tenancy, as the application information is an important part of the application scope. So I don't think
 it makes too much sense to split off this topic, and then re-iterate over it in the context of multi-tenancy.
 
 ## Requirements and non-goals
 
 * It must be possible to run multiple instances of the solution in a single Kubernetes cluster. Each instance
-  supporting multiple tenants. This would be needed to run multiple versions alongside.
+  supporting multiple tenants/applications. This would be needed to run multiple versions alongside.
 * While it might be a valid use case, there is no requirement to be able to migrate a tenant from instance to another.
 * This approach does not support inter-scope/inter-tenant communication by itself.
 * Support X.509 client certificate authentication for devices.
 
-### Tenants own their devices
+### Applications own their devices
 
-A tenant owns/contains its devices. That means that as soon as a tenant is being deleted, its devices must be deleted
+An application owns/contains its devices. That means that as soon as an application is being deleted, its devices must be deleted
 as well.
 
-It is ok to "soft delete" (mark deleted) the devices or tenant first, if the deletion takes more time/operations,
+It is ok to "soft delete" (mark deleted) the devices or application first, if the deletion takes more time/operations,
 than a simple removal of the entry.
 
-Deleting and re-creating a tenant with the same ID must not bring back the devices previously owned by the tenant.
+Deleting and re-creating a application with the same ID must not bring back the devices previously owned by the application.
 
 ### Use case: Replace device, keep stable ID
 
@@ -71,9 +71,9 @@ device should continue to be recognized as `d1` by the system.
 
 ### IDs
 
-Both tenants and devices will have a unique ID. Tenants are unique per-instance. Devices are unique per-tenant.
+Both applications and devices will have a unique ID. Applications are unique per-instance. Devices are unique per-application.
 
-Tenant IDs:
+Application IDs:
   * Must be DNS labels as defined by [RFC1123](https://tools.ietf.org/html/rfc1123)
   * This is necessary to ensure that we can use this ID for Kubernetes resources as well
   * Also see: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
@@ -89,12 +89,12 @@ Device IDs:
 
 ### Management API / Persistence
 
-For the moment we store the tenant information in the same PostgreSQL instance which we use for devices. We use
-a simple foreign key constraint and "cascade deletes" from tenants to devices when deleting tenants. The plan is to
+For the moment we store the application information in the same PostgreSQL instance which we use for devices. We use
+a simple foreign key constraint and "cascade deletes" from applications to devices when deleting applications. The plan is to
 re-iterate over the device registry later anyway to support integrating with other services. So we only make implement
 what really is necessary at this point.
 
-We create some basic CRUD HTTP APIs for the tenant and amend the device APIs with the "tenant" information.
+We create some basic CRUD HTTP APIs for the application and amend the device APIs with the "application" information.
 
 At this point, we ignore all RBAC or authorization of operations. We still require the user to authenticate in order
 to make changes, re-using the OAuth2 mechanisms that we already started to adopt. This might allow us later to re-use
@@ -105,7 +105,7 @@ the OAuth2 information for authorization as well.
 #### Database tables
 
 ~~~sql
-CREATE TABLE tenants (
+CREATE TABLE applications (
     ID VARCHAR(64) NOT NULL,
 
     DATA JSONB,
@@ -113,40 +113,40 @@ CREATE TABLE tenants (
     PRIMARY KEY (ID)
 );
 
-CREATE TABLE tenant_aliases (
+CREATE TABLE application_aliases (
     TYPE    VARCHAR(32) NOT NULL,  -- type of the alias, e.g. 'id'
     ALIAS   VARCHAR(256) NOT NULL, -- value of the alias, e.g. <id>
     ID      VARCHAR(64) NOT NULL,
     
     PRIMARY KEY (ALIAS),
-    FOREIGN KEY (ID) REFERENCES tenants(ID) ON DELETE CASCADE
+    FOREIGN KEY (ID) REFERENCES applications(ID) ON DELETE CASCADE
 );
 
 CREATE TABLE devices (
-    ID           VARCHAR(256) NOT NULL,
-    TENANT_ID    VARCHAR(64) NOT NULL,
+    ID              VARCHAR(256) NOT NULL,
+    APPLICATION_ID  VARCHAR(64) NOT NULL,
 
     DATA JSONB,
 
-    PRIMARY KEY (ID, TENANT_ID),
-    FOREIGN KEY (TENANT_ID) REFERENCES tenants(ID) ON DELETE CASCADE
+    PRIMARY KEY (ID, APPLICATION_ID),
+    FOREIGN KEY (APPLICATION_ID) REFERENCES applications(ID) ON DELETE CASCADE
 );
 
 CREATE TABLE device_aliases (
-    TYPE        VARCHAR(32) NOT NULL,  -- type of the alias, e.g. 'id'
-    ALIAS       VARCHAR(256) NOT NULL, -- value of the alias, e.g. <id>
-    ID          VARCHAR(256) NOT NULL,
-    TENANT_ID   VARCHAR(64) NOT NULL,
+    TYPE            VARCHAR(32) NOT NULL,  -- type of the alias, e.g. 'id'
+    ALIAS           VARCHAR(256) NOT NULL, -- value of the alias, e.g. <id>
+    ID              VARCHAR(256) NOT NULL,
+    APPLICATION_ID  VARCHAR(64) NOT NULL,
 
-    PRIMARY KEY (ALIAS, TENANT_ID),
+    PRIMARY KEY (ALIAS, APPLICATION_ID),
     FOREIGN KEY (ID) REFERENCES devices(ID) ON DELETE CASCADE,
-    FOREIGN KEY (TENANT_ID) REFERENCES tenants(ID) ON DELETE CASCADE
+    FOREIGN KEY (APPLICATION_ID) REFERENCES applications(ID) ON DELETE CASCADE
 );
 ~~~
 
 ### Aliases
 
-A tenant or device can be referenced by ID, or looked up using an alias. Aliases must be unique, like the primary key
+An application or device can be referenced by ID, or looked up using an alias. Aliases must be unique, like the primary key
 of the entity.
 
 An alias consists of a type and an ID value. The type is purely informational and used to provider better information
@@ -160,29 +160,29 @@ A duplicate alias for the targeting the same ID is ignored.
 A default `id` type entry with the entity ID is always added:
 
 ~~~yaml
-tenants:
-  - id: tenant1
-  - id: tenant2
+applications:
+  - id: app1
+  - id: app2
 ~~~
 
 Would result in:
 
 ~~~
 ---
-TENANTS
+APPLICATIONS
 ---
 "ID"
 ---
-"tenant1"
-"tenant2"
+"app11"
+"app22"
 
 ---
-TENANT_ALIASES
+APPLICATION_ALIASES
 ---
 "TYPE", "ALIAS", "ID"
 ---
-"id", "tenant1", "tenant1"
-"id", "tenant2", "tenant2"
+"id", "app1", "app1"
+"id", "app2", "app2"
 ~~~
 
 For devices this might look like:
@@ -190,11 +190,11 @@ For devices this might look like:
 ~~~yaml
 devices:
   - id: device1
-    tenant: tenant1
+    application: app1
   - id: device2
-    tenant: tenant1
+    application: app1
   - id: device1
-    tenant: tenant2
+    application: app2
 ~~~
 
 Resulting in:
@@ -203,20 +203,20 @@ Resulting in:
 ---
 DEVICES
 ---
-"ID", "TENANT_ID"
+"ID", "APPLICATION_ID"
 ---
-"device1", "tenant1"
-"device2", "tenant1"
-"device1", "tenant2"
+"device1", "app1"
+"device2", "app1"
+"device1", "app2"
 
 ---
 DEVICE_ALIASES
 ---
-"TYPE", "ALIAS", "ID", "TENANT_ID"
+"TYPE", "ALIAS", "ID", "APPLICATION_ID"
 ---
-"id", "device1", "device1", tenant1"
-"id", "device2", "device2", tenant1"
-"id", "device1", "device1", tenant2"
+"id", "device1", "device1", app1"
+"id", "device2", "device2", app1"
+"id", "device1", "device1", app2"
 ~~~
 
 Adding, for example, a unique username to a device, might look like this:
@@ -224,7 +224,7 @@ Adding, for example, a unique username to a device, might look like this:
 ~~~yaml
 devices:
   - id: device1
-    tenant: tenant1
+    application: app1
     credentials:
       - username: user1
         password: foo
@@ -237,17 +237,17 @@ devices:
 ---
 DEVICES
 ---
-"ID", "TENANT_ID", "DATA"
+"ID", "APPLICATION_ID", "DATA"
 ---
-"device1", "tenant1", {"credentials": [{"username": "user1", …}, {"username": "mac1", "unique": true, …}]}
+"device1", "app1", {"credentials": [{"username": "user1", …}, {"username": "mac1", "unique": true, …}]}
 
 ---
 DEVICE_ALIASES
 ---
-"TYPE", "ALIAS", "ID", "TENANT_ID"
+"TYPE", "ALIAS", "ID", "APPLICATION_ID"
 ---
-"id",       "device1", "device1", "tenant1"
-"username", "mac1",    "device1", "tenant1"
+"id",       "device1", "device1", "app1"
+"username", "mac1",    "device1", "app1"
 ~~~
 
 A duplicate "local" alias would cause no problem:
@@ -255,7 +255,7 @@ A duplicate "local" alias would cause no problem:
 ~~~yaml
 devices:
   - id: device1
-    tenant: tenant1
+    application: app1
     credentials:
       - username: device1
         password: foo
@@ -271,9 +271,9 @@ Would result in the following list:
 ---
 DEVICE_ALIASES
 ---
-"TYPE", "ALIAS", "ID", "TENANT_ID"
+"TYPE", "ALIAS", "ID", "APPLICATION_ID"
 ---
-"id", "device1", "device1", "tenant1"
+"id", "device1", "device1", "app1"
 ~~~
 
 #### Manually defined aliases
@@ -282,32 +282,32 @@ The idea of the aliases is to be populated automatically, derived from the entit
 possible to create an "alias" section in the entity in order to manually created aliases:
 
 ~~~yaml
-tenants:
-  - id: tenant1
-    aliases: ["tenant2"]
+applicationss:
+  - id: app1
+    aliases: ["app2"]
 ~~~
 
 Resulting in:
 
 ~~~
 ---
-TENANTS
+APPLICATIONS
 ---
 "ID"
 ---
-"tenant1"
+"app1"
 
 ---
-TENANT_ALIASES
+APPLICATION_ALIASES
 ---
 "TYPE", "ALIAS", "ID"
 ---
-"id", "tenant1", "tenant1"
-"id", "tenant2", "tenant1"
+"id", "app1", "app1"
+"id", "app2", "app1"
 ~~~
 
-Note that this would only be used when looking up a tenant. When a tenant is directly referenced only `tenant1` would
-work. Also, would the lookup process return `tenant1` in both cases.
+Note that this would only be used when looking up an application. When an application is directly referenced only `app1` would
+work. Also, would the lookup process return `app1` in both cases.
 
 #### Alias conflicts
 
@@ -317,21 +317,21 @@ will be rejected by the system.
 For example: Creating a device `d1` and creating a device `d2` with a unique username of `d1` would cause a conflict.
 So it is not possible to add a unique username of `d2` that already is used otherwise in the system.
 
-As devices are unique within the scope of a tenant, tenants are unique in the scope of an instance. So more care has
-to be taken defining aliases for tenants as that may block others from using the ID.
+As devices are unique within the scope of an application, applications are unique in the scope of an instance. So more care has
+to be taken defining aliases for applications as that may block others from using the ID.
 
-For example: A tenant of "Bar Inc" could create a trust anchor for `O=Foo Inc`, blocking "Foo Inc" from creating an
+For example: An application of "Bar Inc" could create a trust anchor for `O=Foo Inc`, blocking "Foo Inc" from creating an
 appropriate trust anchor. There are two possible solutions for this:
 
 1) An approval process is used to ensure that a trust anchor only gets activated (and thus the alias created) after
    a manual control of the trust anchor.
-2) A dedicated instance is used so that a user can self manage all aspects of the tenant configuration. 
+2) A dedicated instance is used so that a user can self manage all aspects of the application configuration. 
 
 #### More alias examples
 
 ##### Example #1: Custom endpoint hostname
 
-A tenant is configured with a dedicated hostname: `mqtt.my.corp`. That would result in an additional alias:
+A application is configured with a dedicated hostname: `mqtt.my.corp`. That would result in an additional alias:
 
 * `mytt.my.corp`.
 
@@ -365,10 +365,10 @@ Currently, the following types are available:
   entry for a different device will cause an error. Creating an additional entry, with the same unique username but
   a different password for the same device is fine though.
 * PSK/Token/Password only – A secret, with no username. This is typically some random byte array.
-* X.509 Client certificate – The tenant may have a list of X.509 trust anchors. A possible mode of operation is to
-  extract the "subjectDn" of a trust anchor as additional tenant ID. In that case the subject DN of the trust anchor
+* X.509 Client certificate – The application may have a list of X.509 trust anchors. A possible mode of operation is to
+  extract the "subjectDn" of a trust anchor as additional application ID. In that case the subject DN of the trust anchor
   (the issuer DN of the client certificate) can be used to look up the client, however that also means that the
-  subject DN of the trust anchor must be unique for all tenants. This is why this extraction should be explicitly
+  subject DN of the trust anchor must be unique for all applications. This is why this extraction should be explicitly
   enabled.
   
   The device would not contain (store) the certificate itself. However, some operations might require a way to lookup
@@ -395,7 +395,7 @@ It will still be checked if the gateway device has the permission to act on beha
 
 In order to authenticate a device, we would need the following information:
 
-* Tenant
+* Application ID
 * Device ID (ID of the gateway device if used)
 * Secret (one of)
   * (Username)/password
@@ -411,11 +411,9 @@ authentication:
 
 #### X.509 client authentication
 
-!! **double check** !!
-
 The validation of X.509 client certificates traditionally happens in TLS handshake phase. However, we not always have
-all necessary information available at that time. For example, it may be that the tenant does not use a custom
-hostname, but transmits the tenant information as an HTTP query parameter instead.
+all necessary information available at that time. For example, it may be that the application does not use a custom
+hostname, but transmits the application information as an HTTP query parameter instead.
 
 That is why the X.509 client checked for some basic constraints during the TLS handshake validation (like expiration
 date). It will be re-checked later on by the authentication service when the full request information is available.
@@ -435,17 +433,17 @@ enum Credential {
 }
 
 struct Request {
-  pub tenants: Vec<String>,
+  pub applications: Vec<String>,
   pub device: String,
   pub credentials: Credential,
 }
 ~~~
 
-The authentication service will expand the list of tenants and devices and try to find a match. Assuming the following
+The authentication service will expand the list of applications and devices and try to find a match. Assuming the following
 request:
 
 ~~~yaml
-tenants: ["tenant1", "foo"]
+applications: ["app1", "foo"]
 device: "device1"
 ~~~
 
@@ -453,15 +451,15 @@ That would result in trying the following combinations:
 
 ~~~yaml
 devices:
-- tenant: "tenant1"
+- application: "app1"
   device: "device1"
-- tenant: "foo"
+- application: "foo"
   device: "device1"
 ~~~
 
 If a combination fails to authenticate, the authorization service must try the next combination. However, it is possible
 for the authorization service to perform the lookup before starting the evaluation. This can be done using a single
-`SELECT … ALIAS IN (?)` query, and might result reduced list of tenants/devices, as the aliases might point to the same
+`SELECT … ALIAS IN (?)` query, and might result reduced list of applications/devices, as the aliases might point to the same
 entity.
 
 #### Possible oddities (just checking)
@@ -488,43 +486,43 @@ entity.
 
 ##### Publish as device
 
-* `POST /<channel>{/<custom>}` with basic auth `<device>@<tenant>` / `<password>`:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}` with basic auth `<device>@<application>` / `<password>`:
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `PSK(<password>)`
 
-* `POST /<channel>{/<custom>}?tenant=<tenant>` with basic auth `<device>` / `<password>`:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?application=<application>` with basic auth `<device>` / `<password>`:
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `PSK(<password>)`
 
-* `POST /<channel>{/<custom>}?tenant=<tenant>&device=<device>` with basic auth `<username>` / `<password>`:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?application=<application>&device=<device>` with basic auth `<username>` / `<password>`:
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `UsernamePassword(<username>, <password>)`
 
-* `POST /<channel>{/<custom>}?device=<device>` with basic auth `<username>@<tenant>` / `<password>`:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?device=<device>` with basic auth `<username>@<application>` / `<password>`:
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `UsernamePassword(<username>, <password>)`
 
 * `POST /<channel>{/<custom>}` with client cert:
-  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Application ID: `<endpoint>` | `<issuerDn>`
   * Device ID: `<subjectDn>`
   * Credentials: `Certificate(Certificate)`
 
-* `POST /<channel>{/<custom>}?tenant=<tenant>` with client cert:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?application=<application>` with client cert:
+  * Application ID: `<application>`
   * Device ID: `<subjectDn>`
   * Credentials: `Certificate(Certificate)`
 
-* `POST /<channel>{/<custom>}?tenant=<tenant>&device=<device>` with client cert:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?application=<application>&device=<device>` with client cert:
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `Certificate(Certificate)` # might need additional subjectDn validation
 
 * `POST /<channel>{/<custom>}?device=<device>` with client cert:
-  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Application ID: `<endpoint>` | `<issuerDn>`
   * Device ID: `<device>`
   * Credentials: `Certificate(Certificate)` # might need additional subjectDn validation
 
@@ -534,50 +532,50 @@ Basically it is the same operation as the non-gateway operations. Only the `as` 
 the information for which device the information should be published. There needs to be a check if the device is
 allowed to publish "as the other device".
 
-* `POST /<channel>{/<custom>}?as=<as>` with basic auth `<device>@<tenant>` / `<password>`:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?as=<as>` with basic auth `<device>@<application>` / `<password>`:
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `PSK(<password>)`
   * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?as=<as>&tenant=<tenant>` with basic auth `<gateway>` / `<password>`:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?as=<as>&application=<application>` with basic auth `<device>` / `<password>`:
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `PSK(<password>)`
   * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?as=<as>&tenant=<tenant>&gateway=<gateway>` with basic auth `<username>` / `<password>`:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?as=<as>&application=<application>&device=<device>` with basic auth `<username>` / `<password>`:
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `UsernamePassword(<username>, <password>)`
   * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?as=<as>&gateway=<gateway>` with basic auth `<username>@<tenant>` / `<password>`:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?as=<as>&device=<device>` with basic auth `<username>@<application>` / `<password>`:
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `UsernamePassword(<username>, <password>)`
   * Publish as: `<as>`
 
 * `POST /<channel>{/<custom>}?as=<as>` with client cert:
-  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Application ID: `<endpoint>` | `<issuerDn>`
   * Device ID: `<subjectDn>`
   * Credentials: `Certificate(Certificate)`
   * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?as=<as>&tenant=<tenant>` with client cert:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?as=<as>&application=<application>` with client cert:
+  * Application ID: `<application>`
   * Device ID: `<subjectDn>`
   * Credentials: `Certificate(Certificate)`
   * Publish as: `<as>`
 
-* `POST /<channel>{/<custom>}?as=<as>&tenant=<tenant>&device=<device>` with client cert:
-  * Tenant ID: `<tenant>`
+* `POST /<channel>{/<custom>}?as=<as>&application=<application>&device=<device>` with client cert:
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `Certificate(Certificate)` # might need additional subjectDn validation
   * Publish as: `<as>`
 
 * `POST /<channel>{/<custom>}?as=<as>&device=<device>` with client cert:
-  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Application ID: `<endpoint>` | `<issuerDn>`
   * Device ID: `<device>`
   * Credentials: `Certificate(Certificate)` # might need additional subjectDn validation
   * Publish as: `<as>`
@@ -589,23 +587,23 @@ for that behavior. And that is also why we cannot rely on it containing a specif
 
 ##### Device
 
-* Username/password `<device>@<tenant>` / `<password>`, Client ID: `???`, Topic: `<channel>`
-  * Tenant ID: `<tenant>`
+* Username/password `<device>@<application>` / `<password>`, Client ID: `???`, Topic: `<channel>`
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `PSK(<password>)`
 
-* Username/password `<username>` / `<password>`, Client ID: `<device>@<tenant>`, Topic: `<channel>`
-  * Tenant ID: `<tenant>`
+* Username/password `<username>` / `<password>`, Client ID: `<device>@<application>`, Topic: `<channel>`
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `UsernamePassword(<username>, <password>)`
 
 * Client Cert, Client ID: `???`, Topic: `<channel>`
-  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Application ID: `<endpoint>` | `<issuerDn>`
   * Device ID: `<subjectDn>`
   * Credentials: `Certificate(<certificate>)`
 
-* Client Cert, Client ID: `<device>@<tenant>`, Topic: `<channel>`
-  * Tenant ID: `<tenant>`
+* Client Cert, Client ID: `<device>@<application>`, Topic: `<channel>`
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `Certificate(<certificate>)` # might need additional subjectDn validation
   * **Note:** Can only be validated after the TLS handshake, would however work without TLS SNI. As we cannot trust
@@ -615,26 +613,26 @@ for that behavior. And that is also why we cannot rely on it containing a specif
 
 ##### Gateway Device
 
-* Username/password `<gateway>@<tenant>` / `<password>`, Client ID: `???`, Topic: `<channel>/<device>`
-  * Tenant ID: `<tenant>`
+* Username/password `<gateway>@<application>` / `<password>`, Client ID: `???`, Topic: `<channel>/<device>`
+  * Application ID: `<application>`
   * Device ID: `<gateway>`
   * Credentials: `PSK(<password>)`
   * Publish as: `<device>`
 
-* Username/password `<username>` / `<password>`, Client ID: `<device>@<tenant>`, Topic: `<channel>/<device>`
-  * Tenant ID: `<tenant>`
+* Username/password `<username>` / `<password>`, Client ID: `<device>@<application>`, Topic: `<channel>/<device>`
+  * Application ID: `<application>`
   * Device ID: `<device>`
   * Credentials: `UsernamePassword(<username>, <password>)`
   * Publish as: `<device>`
 
 * Client Cert, Client ID: `???`, Topic: `<channel>/<device>`
-  * Tenant ID: `<endpoint>` | `<issuerDn>`
+  * Application ID: `<endpoint>` | `<issuerDn>`
   * Device ID: `<subjectDn>`
   * Credentials: `Certificate(<certificate>)`
   * Publish as: `<device>`
 
-* Client Cert, Client ID: `<gateway>@<tenant>`, Topic: `<channel>`
-  * Tenant ID: `<tenant>`
+* Client Cert, Client ID: `<gateway>@<application>`, Topic: `<channel>`
+  * Application ID: `<application>`
   * Device ID: `<gateway>`
   * Credentials: `Certificate(<certificate>)` # might need additional subjectDn validation
   * **Note:** Can only be validated after the TLS handshake, would however work without TLS SNI. As we cannot trust
@@ -656,17 +654,17 @@ For more information about Hono, see: https://www.eclipse.org/hono/docs/user-gui
 
 #### Publishing events
 
-* Each tenant has its own KNative eventing based delivery endpoint. The focus is on this being a Knative `KafkaChannel`.
+* Each application has its own KNative eventing based delivery endpoint. The focus is on this being a Knative `KafkaChannel`.
   In theory, this could be any Knative eventing endpoint. Events get published as a CloudEvent:
   * `subject` – The device ID
 
-* As each tenant has its own endpoint, the tenant information is not part of the event.
+* As each application has its own endpoint, the application information is not part of the event.
 
 * Currently, we do not auto-provision/auto-create Kafka channels/topics. This feature will be added in the upcoming
   device registry work.
 
 * Initially we will use a simple template string approach to generate the name of the service name to contact. Something
-  like: `https://{tenant}-kn-channel.drogue-iot.svc.cluster.local`.
+  like: `https://{application}-kn-channel.drogue-iot.svc.cluster.local`.
 
 * Consumers of the events will get notified by an "exporter". This is future work and for now we continue to
   directly access the Kafka topic. This implies that, for now, no authentication/authorization is being performed.
@@ -682,9 +680,9 @@ For more information about Hono, see: https://www.eclipse.org/hono/docs/user-gui
 The idea of the alias scopes is to have better control of the IDs. To allow controlling the lookup processing use
 more specific information. However, that might also create some ambiguous situations.
 
-It shouldn't be a big deal for devices, as they are mostly under the control of a tenant. However, for tenants that
+It shouldn't be a big deal for devices, as they are mostly under the control of a application. However, for applications that
 might have more impact. So more care must be taken, thinking about the extraction of properties. Because, for example,
-a manual alias might block the "issuer DN" of another tenant.
+a manual alias might block the "issuer DN" of another application.
 
 #### strong-scoped aliases
 
@@ -715,20 +713,20 @@ It would also be possible to drop the "type" information altogether. However, th
 *why* an alias is blocked. Having that information available would allow better error reporting in the case of
 conflicts for management operations.
 
-### Instance per tenant
+### Instance per application
 
-Technically it would be possible to create an instance per-tenant. This would simplify a lot of things, as it would
+Technically it would be possible to create an instance per-application. This would simplify a lot of things, as it would
 be isolated by default. It would still be possible to re-use components like the Kafka topic. However, other components
-(like the SSO instance, the PostgreSQL database) would still be duplicated, and multiplied by the number of tenants.
+(like the SSO instance, the PostgreSQL database) would still be duplicated, and multiplied by the number of applications.
 
-When re-using the same Kafka topic, that would also mean that still a "tenant ID" would need to be introduced, and thus
+When re-using the same Kafka topic, that would also mean that still a "application ID" would need to be introduced, and thus
 this would still have an impact in the current implementation.
 
 ## Unresolved topics
 
-### Locating the tenant for X.509 certificates
+### Locating the application for X.509 certificates
 
-Currently, we specify `endpoint` and `subjectDn` when locating a tenant. That means that we would need to two lookups.
+Currently, we specify `endpoint` and `subjectDn` when locating a application. That means that we would need to two lookups.
 
 We need to double check if that is ok, and if there is an alternative.
 
@@ -745,16 +743,18 @@ arise inside the Drogue IoT cloud codebase.
 
 "Application" is used by "The Things Network".
 
+**Resolution**: We decided on "application" after some discussion and a vote on the chat.
+
 ### Consuming data
 
-Multiple tenants share the internal Kafka topic (assuming we do not have a per-tenant topic as described in the
-"Alternatives" section). This means that we cannot give the tenant access to the Kafka topic (which might be good
+Multiple applications share the internal Kafka topic (assuming we do not have a per-application topic as described in the
+"Alternatives" section). This means that we cannot give the application access to the Kafka topic (which might be good
 for other reasons as well).
 
-However, the user/tenant needs a ways to consume the data from that Kafka topic.
+However, the user/application needs a ways to consume the data from that Kafka topic.
 
 One idea is that provide "integrations", which would for example forward messages to an HTTP endpoint of your choice
-using CloudEvents. This would allow filtering out events by tenant.
+using CloudEvents. This would allow filtering out events by application.
 
 This is out of scope for this RFC and is planned to be implemented in the future.
 
