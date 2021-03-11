@@ -69,6 +69,7 @@ The following diagram describes the process:
 
 ## Drogue Cloud
 
+* TODO: Integration with Hawkbit
 * TODO: DFU fetch API
 * TODO: DFU status API
 * TODO: DFU command spec
