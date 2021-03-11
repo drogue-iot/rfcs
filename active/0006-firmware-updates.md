@@ -69,11 +69,11 @@ The following diagram describes the process:
 
 ## Drogue Cloud
 
-TODO: DFU fetch API
-TODO: DFU status API
-TODO: DFU command spec
+* TODO: DFU fetch API
+* TODO: DFU status API
+* TODO: DFU command spec
 
 ## Drogue Device
 
-TODO: Bootloader 
-TODO: DFU Actor
+* TODO: Bootloader 
+* TODO: DFU Actor
