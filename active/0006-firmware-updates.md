@@ -33,7 +33,7 @@ Drogue-device needs a bootloader that can:
 
 * Boot firmwares (duh)
 * Write new firmware versions to flash while current firmware is running (banking)
-* Handle the case where the new firmware is not working (retry, roll back and report)
+* Handle the case where the new firmware is not working (retry, roll back and load previous firmware)
 
 To make DFU easy for firmware writes, drogue-device needs a component that can:
 
@@ -75,6 +75,13 @@ The following diagram describes the process:
 * TODO: DFU command spec
 
 ## Drogue Device
+
+### Bootloader
+
+* To simplify the design, the bootloader cannot be updated without re-flashing the device. 
+* The bootloader will keep a 'current' firmware that it will boot first.
+* If the device panics, it will retry the 'current' firmware until a max number of retries.
+* If it panics and reaches max number of retries, diagnostics will be stored, and the 'previous' firmware will be used.
 
 * TODO: Bootloader 
 * TODO: DFU Actor
