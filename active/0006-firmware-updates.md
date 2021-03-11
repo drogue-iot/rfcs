@@ -83,5 +83,7 @@ The following diagram describes the process:
 * If the device panics, it will retry the 'current' firmware until a max number of retries.
 * If it panics and reaches max number of retries, diagnostics will be stored, and the 'previous' firmware will be used.
 
+An alternative approach would be to bundle the bootloader with the minimal code to do networking: actor framework and a selected network driver + DFU actor that would consume less flash space than the full application.
+
 * TODO: Bootloader 
 * TODO: DFU Actor
