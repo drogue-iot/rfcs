@@ -1,0 +1,42 @@
+= [Cloud] APIs redesign
+
+== High level Goals
+
+* Unify the three separates API under the same endpoint
+* Command API
+* Management API
+* Console API
+* Independent versioning for the 3 APIs but maintain consistency in how they feel.
+
+== Current API design discussion
+
+The initial version of the management API was similar to the Hono registry API,
+without the complications of a separate credential endpoint essentially. Hence, apps IDs and device IDs were used in
+REST path. Request parameters are not used.
+When creating an entry, the payload contains App ID an device ID in body. When reading an entry the ID is in the path.
+When updating the IDs are in *both* payload and Path.
+While this can feel weird at times this design is widely used, to cite an example : k8s does *exactly* the same.
+
+The existing command API (RFC 0002) is using a couple of endpoints and pass all the variables as request parameters.
+
+There is no written spec for the console backend :)
+
+As drogue cloud is running on kubernetes it makes sense to maintain some consistency with kubernetes.
+Kubernetes do IDs in path. And query parameters for optional parameters.
+
+== Features to have in the new API
+
+* Bulk operations.
+* Avoid repeating information. resource ID in the path AND in the payload when doing `update` is weird and error prone.
+* Always allow optimistic locking
+* Support partial update through patch
+
+== Initial draft for the management API
+
+See ../resources/drogue-cloud-api.yaml
+
+In order to avoid complications on the "main" API I dedicated a separate endpoint for bulk operations, as parsing
+the responses is more complex.
+
+This is a draft to spark discussion around the general idea, before diving into the details
+(I suspect devices credentials payloads are not going to be easy)

@@ -1,0 +1,217 @@
+openapi: 3.1.0
+info:
+  title: Drogue Cloud API Specification
+  version: 0.5.0
+paths:
+  /api/managment/{version}/apps :
+    get:
+      description: Return all the apps the user has access to
+      parameters:
+        - $ref: '#/components/parameters/AppIdList'
+          required: false
+      responses:
+        200:
+          description: A list of apps
+        404:
+          description: If requested apps do not exits or if the user has not access to them.
+    post:
+      description: create new apps.
+      requestBody:
+        description: The spec section of the app to add
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/App'
+      responses:
+        201:
+          description: If the app is created
+        409:
+          description: If the app id is already used.
+    put:
+      description: update existing app
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/ResourceVersion'
+      requestBody:
+        description: The spec section of the app to update
+        required: true
+        content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/App'
+      responses:
+            204:
+              description: If the app is updated
+            404:
+              description: If requested apps do not exits or if the user has not access to them.
+    delete:
+      description: Delete existing app
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/ResourceVersion'
+      responses:
+        204:
+          description: If the app is deleted
+        404:
+          description: If requested apps do not exits or if the user has not access to them.
+    patch:
+      description: Patch existing app
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/ResourceVersion'
+      requestBody:
+        description: The json patch to apply
+        required: true
+        content:
+          application/json :
+            example:
+              [
+              { "op": "replace", "path": "/baz", "value": "boo" },
+              { "op": "add", "path": "/hello", "value": ["world"] },
+              { "op": "remove", "path": "/foo" }
+              ]
+      responses:
+        204:
+          description: If the app is updated
+        404:
+          description: If requested apps do not exits or if the user has not access to them.
+
+  /api/managment/{version}/bulk/apps:
+      post:
+        description: create new apps.
+        requestBody:
+          description: An array of the apps to create.
+          required: true
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/AppArray'
+        responses:
+          207:
+            description: A JSON key/value map where each key is the id of the requested app creation and value contains the outcome.
+            content:
+              'application/json' :
+                schema:
+                  $ref: '#/components/schemas/BulkAppResponseArray'
+
+      put:
+        description: update existing apps
+        requestBody:
+          description: An array of the spec sections of the apps to update
+          required: true
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/AppArray'
+        responses:
+          207:
+            description: A JSON key/value map where each key is the id of the requested app update and value contains the outcome.
+            content:
+              'application/json':
+                schema:
+                  $ref: '#/components/schemas/BulkAppResponseArray'
+
+      delete:
+        description: Delete existing app
+        parameters:
+          - $ref: '#/components/parameters/AppIdList'
+            required: false
+        responses:
+          207:
+            description: A JSON key/value map where each key is the id of the requested app deletion and value contains the outcome.
+            content:
+              'application/json':
+                schema:
+                  $ref: '#/components/schemas/BulkAppResponseArray'
+
+      patch:
+        description: Patch existing app
+        parameters:
+          - $ref: '#/components/parameters/AppId'
+          - $ref: '#/components/parameters/ResourceVersion'
+        requestBody:
+          description:
+            An object containing a map of key and values where Key is the id of the app to patch and the value is a JSON patch.
+          required: true
+          content:
+            application/json:
+              example:
+                {
+                  app1: [
+                        { "op": "replace", "path": "/baz", "value": "boo" },
+                        { "op": "add", "path": "/hello", "value": ["world"] },
+                        { "op": "remove", "path": "/foo" }
+                        ]
+                }
+        responses:
+          207:
+            description: A JSON key/value map where each key is the id of the requested app deletion and value contains the outcome.
+            content:
+              'application/json':
+                schema:
+                  $ref: '#/components/schemas/BulkAppResponseArray'
+
+
+components:
+
+  parameters:
+    AppId:
+      name: app-id
+      in: query
+      required: true
+      description: The id of the app to update
+    ResourceVersion:
+      name: resource-version
+      in: query
+      required: false
+      description: The resource version of the existing data, for optimistic locking.
+    AppIdList:
+      name: app-id
+      in: query
+      description: A comma separated list of the apps ids to retrieve
+
+
+
+  schemas:
+
+    App:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          required: true
+        spec:
+          $ref: '#/components/schemas/AppSpec'
+
+    AppSpec:
+      type: object
+      additionalProperties: true
+      description: A json object containing whatever data needs to be attached to an app.
+
+    AppArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/App'
+
+    BulkAppResponseArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/BulkAppResponse'
+
+    BulkAppResponse:
+      type: object
+      additionalProperties: true
+      example:
+        myApp:
+          status: 200 OK
+          resource-version: 8ee26746-993c-11eb-b22a-b42e99fb4a70
+
+  responses:
+      BulkAppCreationResponse:
+        description: A JSON key/value map where each key is the id of the requested app creation and value contains the outcome.
+        content:
+          'application/json' :
+            schema:
+              $ref: '#/components/schemas/BulkAppResponseArray'
+
