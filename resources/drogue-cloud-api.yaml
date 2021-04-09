@@ -8,7 +8,7 @@ paths:
       description: Return all the apps the user has access to
       parameters:
         - $ref: '#/components/parameters/AppIdList'
-          required: false
+          #required: false
       responses:
         200:
           description: A list of apps
@@ -115,7 +115,7 @@ paths:
         description: Delete existing app
         parameters:
           - $ref: '#/components/parameters/AppIdList'
-            required: false
+            #required: false
         responses:
           207:
             description: A JSON key/value map where each key is the id of the requested app deletion and value contains the outcome.
