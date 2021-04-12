@@ -3,7 +3,7 @@ info:
   title: Drogue Cloud API Specification
   version: 0.5.0
 paths:
-  /api/managment/v1alpha1/apps :
+  /api/managment/v1alpha1/apps/ :
     get:
       description: Return all the apps the user has access to
       parameters:
@@ -27,10 +27,21 @@ paths:
           description: If the app is created
         409:
           description: If the app id is already used.
+  /api/managment/v1alpha1/apps/{appId} :
+    get:
+      description: Return app details.
+      responses:
+        200:
+          description: The data of the app
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/App'
+        404:
+          description: If requested app do not exist or if the user has not access to it.
     put:
       description: update existing app
       parameters:
-        - $ref: '#/components/parameters/AppId'
         - $ref: '#/components/parameters/ResourceVersion'
       requestBody:
         description: The spec section of the app to update
@@ -47,7 +58,6 @@ paths:
     delete:
       description: Delete existing app
       parameters:
-        - $ref: '#/components/parameters/AppId'
         - $ref: '#/components/parameters/ResourceVersion'
       responses:
         204:
@@ -57,7 +67,6 @@ paths:
     patch:
       description: Patch existing app
       parameters:
-        - $ref: '#/components/parameters/AppId'
         - $ref: '#/components/parameters/ResourceVersion'
       requestBody:
         description: The json patch to apply
@@ -151,6 +160,115 @@ paths:
                 schema:
                   $ref: '#/components/schemas/BulkAppResponseArray'
 
+  /api/command/v1alpha1/{appId}/{deviceId}:
+    post:
+      description: Send one way commands to devices.
+      parameters:
+        - name: command
+          required: true
+          in: query
+          description: Command to execute
+        - name: timeout
+          required: false
+          in: query
+          description: Set amount of time in seconds to wait for the command response from the device.
+      requestBody:
+        description: Optional payload for the command
+        required: false
+        content:
+          'application/json':
+            example: {"set-temp": 40}
+      responses:
+        202:
+          description: |
+            Optional payload of the command response.
+            With external integration (like ttn) then it's anything the integration point returns.
+        401:
+          description: Invalid authentication.
+        404:
+          description: Device or app not found.
+        406:
+          description: Device is not found or disabled.
+
+  /api/command/v1alpha1/{channel}/{appId}/{deviceId}:
+    post:
+      description: Receive commands as response to data publish
+      parameters:
+        - name: command-timeout
+          required: false
+          in: query
+          description: Set amount of time in seconds to wait for the command response from the device.
+        requestBody:
+          description: Data to publish.
+          required: true
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/TelemetryData'
+      responses:
+        200:
+          description: |
+            Data is successfully published and the response contain a command.
+          headers:
+            Command:
+              description: Command to be executed
+            Request:
+              required: false
+              description: Request identifier used to correlate response with.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/CommandObject'
+        202:
+          description: Data is successfully published, no command available.
+        406:
+          description: Data is not successfully published, no command available.
+
+  /api/command/v1alpha1/inbox/{appId}/{deviceId}:
+    get:
+      description: Explicitly wait for commands
+      parameters:
+        - name: timeout
+          required: false
+          in: query
+          description: Wait for commands for specified amount of time in seconds.
+      responses:
+        200:
+          description: The response contain a command.
+          headers:
+            Command:
+              description: Command to be executed
+            Request:
+              required: false
+              description: Request identifier used to correlate response with.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/CommandObject'
+        404:
+          description: No command available.
+
+  /api/command/v1alpha1/outbox/{appId}/{deviceId}:
+    post:
+      description: Send a command result.
+      parameters:
+        - name: request
+          required: false
+          in: query
+          description: Request identifier used to correlate response with.
+        - name: status
+          required: true
+          in: query
+          description: Status code of commands execution.
+      requestBody:
+        content:
+          'application/json':
+            example:
+              {error: light disconnected}
+        description: Optional payload for the command response
+      responses:
+        200:
+          description: Command result saved.
 
 components:
 
@@ -206,6 +324,21 @@ components:
         myApp:
           status: 200 OK
           resource-version: 8ee26746-993c-11eb-b22a-b42e99fb4a70
+
+    CommandObject:
+      type: object
+      additionalProperties: true
+      example:
+        set-temp: 21
+        set-light-color: FDF4DC
+
+    TelemetryData:
+      type: object
+      additionalProperties: true
+      example:
+        temp: 19
+        luminosity: 55
+
 
   responses:
       BulkAppCreationResponse:
