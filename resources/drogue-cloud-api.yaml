@@ -8,7 +8,7 @@ paths:
       description: Return all the apps the user has access to
       parameters:
         - $ref: '#/components/parameters/AppIdList'
-          #required: false
+          required: false
       responses:
         200:
           description: A list of apps
@@ -28,6 +28,8 @@ paths:
         409:
           description: If the app id is already used.
   /api/managment/v1alpha1/apps/{appId} :
+    parameters:
+      - $ref: '#/components/parameters/AppId'
     get:
       description: Return app details.
       responses:
@@ -161,17 +163,24 @@ paths:
                   $ref: '#/components/schemas/BulkAppResponseArray'
 
   /api/command/v1alpha1/{appId}/{deviceId}:
+    parameters:
+      - $ref: '#/components/parameters/AppId'
+      - $ref: '#/components/parameters/DeviceId'
     post:
       description: Send one way commands to devices.
       parameters:
         - name: command
           required: true
           in: query
+          schema:
+            $ref: '#/components/schemas/CommandObject'
           description: Command to execute
         - name: timeout
           required: false
           in: query
           description: Set amount of time in seconds to wait for the command response from the device.
+          schema:
+            $ref: '#/components/schemas/Timeout'
       requestBody:
         description: Optional payload for the command
         required: false
@@ -191,6 +200,10 @@ paths:
           description: Device is not found or disabled.
 
   /api/command/v1alpha1/{channel}/{appId}/{deviceId}:
+    parameters:
+      - $ref: '#/components/parameters/AppId'
+      - $ref: '#/components/parameters/DeviceId'
+      - $ref: '#/components/parameters/Channel'
     post:
       description: Receive commands as response to data publish
       parameters:
@@ -198,23 +211,29 @@ paths:
           required: false
           in: query
           description: Set amount of time in seconds to wait for the command response from the device.
-        requestBody:
-          description: Data to publish.
-          required: true
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/TelemetryData'
+          schema:
+            $ref: '#/components/schemas/Timeout'
+      requestBody:
+        description: Data to publish.
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/TelemetryData'
       responses:
         200:
           description: |
             Data is successfully published and the response contain a command.
           headers:
             Command:
-              description: Command to be executed
+              schema:
+                type: object
+              description: Command to be executed.
             Request:
               required: false
               description: Request identifier used to correlate response with.
+              schema:
+                type: string
           content:
             'application/json':
               schema:
@@ -225,6 +244,9 @@ paths:
           description: Data is not successfully published, no command available.
 
   /api/command/v1alpha1/inbox/{appId}/{deviceId}:
+    parameters:
+      - $ref: '#/components/parameters/AppId'
+      - $ref: '#/components/parameters/DeviceId'
     get:
       description: Explicitly wait for commands
       parameters:
@@ -232,15 +254,21 @@ paths:
           required: false
           in: query
           description: Wait for commands for specified amount of time in seconds.
+          schema:
+            $ref: '#/components/schemas/Timeout'
       responses:
         200:
           description: The response contain a command.
           headers:
             Command:
               description: Command to be executed
+              schema:
+                type: object
             Request:
               required: false
               description: Request identifier used to correlate response with.
+              schema:
+                type: string
           content:
             'application/json':
               schema:
@@ -249,6 +277,9 @@ paths:
           description: No command available.
 
   /api/command/v1alpha1/outbox/{appId}/{deviceId}:
+    parameters:
+      - $ref: '#/components/parameters/AppId'
+      - $ref: '#/components/parameters/DeviceId'
     post:
       description: Send a command result.
       parameters:
@@ -256,10 +287,14 @@ paths:
           required: false
           in: query
           description: Request identifier used to correlate response with.
+          schema:
+            type: string
         - name: status
           required: true
           in: query
           description: Status code of commands execution.
+          schema:
+            type: string
       requestBody:
         content:
           'application/json':
@@ -273,32 +308,58 @@ paths:
 components:
 
   parameters:
+    #  $ref: '#/components/parameters/AppId'
     AppId:
-      name: app-id
-      in: query
+      name: appId
+      in: path
       required: true
-      description: The id of the app to update
+      description: The Application ID.
+      schema:
+        type: string
+        description: Must be DNS labels as defined by RFC1123
+    #  $ref: '#/components/parameters/DeviceId'
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      description: The device ID.
+      schema:
+        type: string
+        maxLength: 255
+        description: Must conform to UTF-8
+    Channel:
+      name: channel
+      in: path
+      required: true
+      description: The kafka channel to publish the data in.
+      schema:
+        type: string
+        description: A valid Kafka channel name.
     ResourceVersion:
       name: resource-version
       in: query
       required: false
       description: The resource version of the existing data, for optimistic locking.
+      schema:
+        type: string
+        description: A resource version identifier, usually a uuid.
     AppIdList:
       name: app-id
       in: query
       description: A comma separated list of the apps ids to retrieve
+      schema:
+        items:
+          type: string
 
 
 
   schemas:
-
     App:
       type: object
       additionalProperties: false
       properties:
         id:
           type: string
-          required: true
         spec:
           $ref: '#/components/schemas/AppSpec'
 
@@ -328,9 +389,14 @@ components:
     CommandObject:
       type: object
       additionalProperties: true
+      description: The command to execute.
       example:
         set-temp: 21
         set-light-color: FDF4DC
+
+    Timeout:
+      type: integer
+      example: 30
 
     TelemetryData:
       type: object
@@ -347,4 +413,5 @@ components:
           'application/json' :
             schema:
               $ref: '#/components/schemas/BulkAppResponseArray'
+
 
