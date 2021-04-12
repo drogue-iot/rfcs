@@ -1,9 +1,9 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
   title: Drogue Cloud API Specification
   version: 0.5.0
 paths:
-  /api/managment/{version}/apps :
+  /api/managment/v1alpha1/apps :
     get:
       description: Return all the apps the user has access to
       parameters:
@@ -76,7 +76,7 @@ paths:
         404:
           description: If requested apps do not exits or if the user has not access to them.
 
-  /api/managment/{version}/bulk/apps:
+  /api/managment/v1alpha1/bulk/apps:
       post:
         description: create new apps.
         requestBody:
