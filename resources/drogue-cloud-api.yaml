@@ -201,7 +201,7 @@ paths:
         404:
           description: No command available.
 
-  /api/command/v1alpha1/outbox/{appId}/{deviceId}:
+  /api/command/v1alpha1/outbox/apps/{appId}/devices/{deviceId}:
     parameters:
       - $ref: '#/components/parameters/AppId'
       - $ref: '#/components/parameters/DeviceId'
