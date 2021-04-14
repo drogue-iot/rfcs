@@ -38,5 +38,5 @@ See ../resources/drogue-cloud-api.yaml
 In order to avoid complications on the "main" API I dedicated a separate endpoint for bulk operations, as parsing
 the responses is more complex.
 
-This is a draft to spark discussion around the general idea, before diving into the details
+This is a draft to spark discussion around the general idea, before diving into the details.
 (I suspect devices credentials payloads are not going to be easy)

@@ -87,82 +87,7 @@ paths:
         404:
           description: If requested apps do not exits or if the user has not access to them.
 
-  /api/managment/v1alpha1/bulk/apps:
-      post:
-        description: create new apps.
-        requestBody:
-          description: An array of the apps to create.
-          required: true
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/AppArray'
-        responses:
-          207:
-            description: A JSON key/value map where each key is the id of the requested app creation and value contains the outcome.
-            content:
-              'application/json' :
-                schema:
-                  $ref: '#/components/schemas/BulkAppResponseArray'
-
-      put:
-        description: update existing apps
-        requestBody:
-          description: An array of the spec sections of the apps to update
-          required: true
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/AppArray'
-        responses:
-          207:
-            description: A JSON key/value map where each key is the id of the requested app update and value contains the outcome.
-            content:
-              'application/json':
-                schema:
-                  $ref: '#/components/schemas/BulkAppResponseArray'
-
-      delete:
-        description: Delete existing app
-        parameters:
-          - $ref: '#/components/parameters/AppIdList'
-            #required: false
-        responses:
-          207:
-            description: A JSON key/value map where each key is the id of the requested app deletion and value contains the outcome.
-            content:
-              'application/json':
-                schema:
-                  $ref: '#/components/schemas/BulkAppResponseArray'
-
-      patch:
-        description: Patch existing app
-        parameters:
-          - $ref: '#/components/parameters/AppId'
-          - $ref: '#/components/parameters/ResourceVersion'
-        requestBody:
-          description:
-            An object containing a map of key and values where Key is the id of the app to patch and the value is a JSON patch.
-          required: true
-          content:
-            application/json:
-              example:
-                {
-                  app1: [
-                        { "op": "replace", "path": "/baz", "value": "boo" },
-                        { "op": "add", "path": "/hello", "value": ["world"] },
-                        { "op": "remove", "path": "/foo" }
-                        ]
-                }
-        responses:
-          207:
-            description: A JSON key/value map where each key is the id of the requested app deletion and value contains the outcome.
-            content:
-              'application/json':
-                schema:
-                  $ref: '#/components/schemas/BulkAppResponseArray'
-
-  /api/command/v1alpha1/{appId}/{deviceId}:
+  /api/command/v1alpha1/apps/{appId}/devices/{deviceId}:
     parameters:
       - $ref: '#/components/parameters/AppId'
       - $ref: '#/components/parameters/DeviceId'
@@ -199,7 +124,7 @@ paths:
         406:
           description: Device is not found or disabled.
 
-  /api/command/v1alpha1/{channel}/{appId}/{deviceId}:
+  /api/command/v1alpha1/channel/{channel}/apps/{appId}/devices/{deviceId}:
     parameters:
       - $ref: '#/components/parameters/AppId'
       - $ref: '#/components/parameters/DeviceId'
@@ -243,7 +168,7 @@ paths:
         406:
           description: Data is not successfully published, no command available.
 
-  /api/command/v1alpha1/inbox/{appId}/{deviceId}:
+  /api/command/v1alpha1/inbox/apps/{appId}/devices/{deviceId}:
     parameters:
       - $ref: '#/components/parameters/AppId'
       - $ref: '#/components/parameters/DeviceId'
