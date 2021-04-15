@@ -2,19 +2,34 @@ openapi: 3.0.0
 info:
   title: Drogue Cloud API Specification
   version: 0.5.0
+
+tags:
+  -  name: App administration
+     description: Manage apps members and authorizations.
+  - name: Registry
+    description: Manage Apps and devices in the registry.
+  - name: Command & Control
+    description: Send commands to devices and check the results.
+  - name: Command Polling
+    description: As a device, retrieve commands and submit the result.
 paths:
-  /api/managment/v1alpha1/apps/ :
+  /api/registry/v1alpha1/apps/ :
     get:
+      tags:
+        - Registry
       description: Return all the apps the user has access to
       parameters:
         - $ref: '#/components/parameters/AppIdList'
           required: false
+        - $ref: '#/components/parameters/Labels'
       responses:
         200:
-          description: A list of apps
-        404:
-          description: If requested apps do not exits or if the user has not access to them.
+          description: A list of apps.
+        401:
+          description: Unauthorized.
     post:
+      tags:
+        - Registry
       description: create new apps.
       requestBody:
         description: The spec section of the app to add
@@ -27,10 +42,12 @@ paths:
           description: If the app is created
         409:
           description: If the app id is already used.
-  /api/managment/v1alpha1/apps/{appId} :
+  /api/registry/v1alpha1/apps/{appId} :
     parameters:
       - $ref: '#/components/parameters/AppId'
     get:
+      tags:
+        - Registry
       description: Return app details.
       responses:
         200:
@@ -42,6 +59,8 @@ paths:
         404:
           description: If requested app do not exist or if the user has not access to it.
     put:
+      tags:
+        - Registry
       description: update existing app
       parameters:
         - $ref: '#/components/parameters/ResourceVersion'
@@ -58,6 +77,8 @@ paths:
             404:
               description: If requested apps do not exits or if the user has not access to them.
     delete:
+      tags:
+        - Registry
       description: Delete existing app
       parameters:
         - $ref: '#/components/parameters/ResourceVersion'
@@ -67,6 +88,8 @@ paths:
         404:
           description: If requested apps do not exits or if the user has not access to them.
     patch:
+      tags:
+        - Registry
       description: Patch existing app
       parameters:
         - $ref: '#/components/parameters/ResourceVersion'
@@ -86,12 +109,49 @@ paths:
           description: If the app is updated
         404:
           description: If requested apps do not exits or if the user has not access to them.
+          
+  /api/admin/v1alpha1/apps/{appId}:
+    parameters:
+      - $ref: '#/components/parameters/AppId'
+    get:
+      tags:
+        - App administration
+      description: Return app administration details.
+      responses:
+        200:
+          description: The data of the app
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/App'
+        404:
+          description: If requested app do not exist or if the user has not access to it.
+    put:
+      tags:
+        - App administration
+      description: update existing app admin object
+      parameters:
+        - $ref: '#/components/parameters/ResourceVersion'
+      requestBody:
+        description: The spec section of the app to update
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/App'
+      responses:
+        204:
+          description: If the app is updated
+        404:
+          description: If requested apps do not exits or if the user has not access to them.      
 
   /api/command/v1alpha1/apps/{appId}/devices/{deviceId}:
     parameters:
       - $ref: '#/components/parameters/AppId'
       - $ref: '#/components/parameters/DeviceId'
     post:
+      tags:
+        - Command & Control
       description: Send one way commands to devices.
       parameters:
         - name: command
@@ -124,55 +184,13 @@ paths:
         406:
           description: Device is not found or disabled.
 
-  /api/command/v1alpha1/channel/{channel}/apps/{appId}/devices/{deviceId}:
-    parameters:
-      - $ref: '#/components/parameters/AppId'
-      - $ref: '#/components/parameters/DeviceId'
-      - $ref: '#/components/parameters/Channel'
-    post:
-      description: Receive commands as response to data publish
-      parameters:
-        - name: command-timeout
-          required: false
-          in: query
-          description: Set amount of time in seconds to wait for the command response from the device.
-          schema:
-            $ref: '#/components/schemas/Timeout'
-      requestBody:
-        description: Data to publish.
-        required: true
-        content:
-          'application/json':
-            schema:
-              $ref: '#/components/schemas/TelemetryData'
-      responses:
-        200:
-          description: |
-            Data is successfully published and the response contain a command.
-          headers:
-            Command:
-              schema:
-                type: object
-              description: Command to be executed.
-            Request:
-              required: false
-              description: Request identifier used to correlate response with.
-              schema:
-                type: string
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/CommandObject'
-        202:
-          description: Data is successfully published, no command available.
-        406:
-          description: Data is not successfully published, no command available.
-
   /api/command/v1alpha1/inbox/apps/{appId}/devices/{deviceId}:
     parameters:
       - $ref: '#/components/parameters/AppId'
       - $ref: '#/components/parameters/DeviceId'
     get:
+      tags:
+        - Command Polling
       description: Explicitly wait for commands
       parameters:
         - name: timeout
@@ -206,6 +224,8 @@ paths:
       - $ref: '#/components/parameters/AppId'
       - $ref: '#/components/parameters/DeviceId'
     post:
+      tags:
+        - Command Polling
       description: Send a command result.
       parameters:
         - name: request
@@ -275,7 +295,15 @@ components:
       schema:
         items:
           type: string
-
+    Labels:
+      name: labels
+      in: query
+      required: false
+      description: A list of labels to filter the list.
+      schema:
+        items:
+          type: string
+          description: A label associated to the resource.
 
 
   schemas:
