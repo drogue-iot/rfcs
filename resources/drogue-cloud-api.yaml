@@ -13,6 +13,11 @@ tags:
   - name: Command Polling
     description: As a device, retrieve commands and submit the result.
 paths:
+
+#
+# ## Registry
+#
+
   /api/registry/v1alpha1/apps/ :
     get:
       tags:
@@ -109,41 +114,106 @@ paths:
           description: If the app is updated
         404:
           description: If requested apps do not exits or if the user has not access to them.
-          
-  /api/admin/v1alpha1/apps/{appId}:
+
+#
+# ## Admin
+#
+
+  /api/admin/v1alpha1/user/whoami:
+    get:
+      tags:
+        - User administration
+      description: Get information about the current user.
+      responses:
+        200:
+          description: Information about the current user.
+          content:
+            'application/json':
+              schema:
+                type: object
+                properties:
+                  user-id:
+                    type: string
+                required:
+                  - user-id
+        403:
+          description: In case the user is not logged in.
+
+  /api/admin/v1alpha1/apps/{appId}/transfer-ownership:
+    parameters:
+      - $ref: '#/components/parameters/AppId'
+    put:
+      tags:
+        - Application administration
+      description: Initiate the process to transfer the ownership.
+      requestBody:
+        content:
+          'application/json':
+            schema:
+              type: object
+              properties:
+                new-user:
+                  type: string
+              required:
+                - new-user
+      responses:
+        200:
+          description: Transfer process is initiated.
+        404:
+          description: If the requested application does not exist or if the user has no access to it.
+
+  /api/admin/v1alpha1/apps/{appId}/accept-ownership:
+    parameters:
+      - $ref: '#/components/parameters/AppId'
+    put:
+      tags:
+        - Application administration
+      description: Accept an application as new owner.
+      responses:
+        204:
+          description: Ownership is transfered.
+        404:
+          description: If the requested application does not exist or if the user has no access to it.
+
+  /api/admin/v1alpha1/apps/{appId}/members:
     parameters:
       - $ref: '#/components/parameters/AppId'
     get:
       tags:
-        - App administration
-      description: Return app administration details.
+        - Application administration
+      description: Get curretn application members.
       responses:
         200:
-          description: The data of the app
+          description: The list of members for this application.
           content:
             'application/json':
               schema:
-                $ref: '#/components/schemas/App'
+                $ref: '#/components/schemas/ApplicationMembers'
         404:
-          description: If requested app do not exist or if the user has not access to it.
+          description: If the requested application does not exist or if the user has no access to it.
+
     put:
-      tags:
-        - App administration
-      description: update existing app admin object
       parameters:
         - $ref: '#/components/parameters/ResourceVersion'
+      tags:
+        - Application administration
+      description: update existing app admin object
       requestBody:
         description: The spec section of the app to update
         required: true
         content:
           'application/json':
             schema:
-              $ref: '#/components/schemas/App'
+              $ref: '#/components/schemas/ApplicationMembers'
       responses:
         204:
-          description: If the app is updated
+          description: The application's member list was updated.
         404:
-          description: If requested apps do not exits or if the user has not access to them.      
+          description: If requested application does not exist or if the user has no access to it.
+
+#
+# ## Command & control
+#
 
   /api/command/v1alpha1/apps/{appId}/devices/{deviceId}:
     parameters:
@@ -315,6 +385,45 @@ components:
           type: string
         spec:
           $ref: '#/components/schemas/AppSpec'
+
+    ApplicationMembers:
+      type: object
+      additionalProperties: false
+      required:
+        - resourceVersion
+        - owner
+      properties:
+        resourceVersion:
+          type: string
+        owner:
+          type: string
+        members:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - user_id
+              - role
+            properties:
+              id:
+                type: string
+              role:
+                type: string
+                enum:
+                  - admin
+                  - manager
+                  - reader
+      example:
+        resourceVersion: ced63698-a0da-11eb-97e8-d45d6455d2cc
+        owner: fc74ae68-a0da-11eb-a152-d45d6455d2cc
+        members:
+          - id: d84eb308-a0da-11eb-9e90-d45d6455d2cc
+            role: admin
+          - id: 03e32c1a-a0db-11eb-9e9b-d45d6455d2cc
+            role: manager
+          - id: 0a111dfe-a0db-11eb-a953-d45d6455d2cc
+            role: reader
 
     AppSpec:
       type: object
