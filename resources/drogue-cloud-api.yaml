@@ -4,19 +4,26 @@ info:
   version: 0.5.0
 
 tags:
-  -  name: App administration
-     description: Manage apps members and authorizations.
+  -  name: Application administration
+     description: Manage applications members and authorizations.
   - name: Registry
     description: Manage Apps and devices in the registry.
   - name: Command & Control
     description: Send commands to devices and check the results.
-  - name: Command Polling
-    description: As a device, retrieve commands and submit the result.
+  - name: Applications
+    description: Application management operations.
+  - name: Devices
+    description: Devices management operations.
+
 paths:
 
 #
 # ## Registry
 #
+
+  #
+  # ### Apps
+  #
 
   /api/registry/v1alpha1/apps/ :
     get:
@@ -47,6 +54,7 @@ paths:
           description: If the app is created
         409:
           description: If the app id is already used.
+
   /api/registry/v1alpha1/apps/{appId} :
     parameters:
       - $ref: '#/components/parameters/AppId'
@@ -114,6 +122,112 @@ paths:
           description: If the app is updated
         404:
           description: If requested apps do not exits or if the user has not access to them.
+
+
+  #
+  # ### Devices
+  #
+
+  /api/registry/v1alpha1/apps/{appId}/devices/:
+    parameters:
+      - $ref: '#/components/parameters/AppId'
+    get:
+      tags:
+        - Registry
+      description: Return all the devices of the application.
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdList'
+          required: false
+        - $ref: '#/components/parameters/Labels'
+      responses:
+        200:
+          description: A list of devices.
+        401:
+          description: Unauthorized.
+    post:
+      tags:
+        - Registry
+      description: create a new device.
+      requestBody:
+        description: The device object to add
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/Device'
+      responses:
+        201:
+          description: If the device is created
+        409:
+          description: If the device id is already used.
+
+  /api/registry/v1alpha1/apps/{appId}/devices/{deviceId}:
+    parameters:
+      - $ref: '#/components/parameters/AppId'
+      - $ref: '#/components/parameters/DeviceId'
+    get:
+      tags:
+        - Registry
+      description: Return device details.
+      responses:
+        200:
+          description: The data of the device
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Device'
+        404:
+          description: If requested device do not exist or if the user has not access to it.
+    put:
+      tags:
+        - Registry
+      description: update existing device
+      parameters:
+        - $ref: '#/components/parameters/ResourceVersion'
+      requestBody:
+        description: The data object of the device to update
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/Device'
+      responses:
+        204:
+          description: If the device is updated
+        404:
+          description: If requested device do not exits or if the user has not access to it.
+    delete:
+      tags:
+        - Registry
+      description: Delete existing device
+      parameters:
+        - $ref: '#/components/parameters/ResourceVersion'
+      responses:
+        204:
+          description: If the device is deleted
+        404:
+          description: If requested device do not exits or if the user has not access to it.
+    patch:
+      tags:
+        - Registry
+      description: Patch existing device
+      parameters:
+        - $ref: '#/components/parameters/ResourceVersion'
+      requestBody:
+        description: The json patch to apply
+        required: true
+        content:
+          application/json:
+            example:
+              [
+              { "op": "replace", "path": "/baz", "value": "boo" },
+              { "op": "add", "path": "/hello", "value": ["world"] },
+              { "op": "remove", "path": "/foo" }
+              ]
+      responses:
+        204:
+          description: If the device is updated
+        404:
+          description: If requested device do not exits or if the user has not access to it.
 
 #
 # ## Admin
@@ -260,7 +374,7 @@ paths:
       - $ref: '#/components/parameters/DeviceId'
     get:
       tags:
-        - Command Polling
+        - Command & Control
       description: Explicitly wait for commands
       parameters:
         - name: timeout
@@ -295,7 +409,7 @@ paths:
       - $ref: '#/components/parameters/DeviceId'
     post:
       tags:
-        - Command Polling
+        - Command & Control
       description: Send a command result.
       parameters:
         - name: request
@@ -365,6 +479,13 @@ components:
       schema:
         items:
           type: string
+    DeviceIdList:
+      name: device-id
+      in: query
+      description: A comma separated list of the devices ids to retrieve
+      schema:
+        items:
+          type: string
     Labels:
       name: labels
       in: query
@@ -384,7 +505,16 @@ components:
         id:
           type: string
         spec:
-          $ref: '#/components/schemas/AppSpec'
+          $ref: '#/components/schemas/ResourceSpec'
+
+    Device:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        spec:
+          $ref: '#/components/schemas/ResourceSpec'
 
     ApplicationMembers:
       type: object
@@ -425,10 +555,10 @@ components:
           - id: 0a111dfe-a0db-11eb-a953-d45d6455d2cc
             role: reader
 
-    AppSpec:
+    ResourceSpec:
       type: object
       additionalProperties: true
-      description: A json object containing whatever data needs to be attached to an app.
+      description: A json object containing whatever data needs to be attached to an app or device.
 
     AppArray:
       type: array
