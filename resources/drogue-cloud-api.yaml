@@ -4,16 +4,12 @@ info:
   version: 0.5.0
 
 tags:
-  -  name: Application administration
-     description: Manage applications members and authorizations.
+  - name: Application administration
+    description: Manage applications members and authorizations.
   - name: Registry
     description: Manage Apps and devices in the registry.
   - name: Command & Control
     description: Send commands to devices and check the results.
-  - name: Applications
-    description: Application management operations.
-  - name: Devices
-    description: Devices management operations.
 
 paths:
 
