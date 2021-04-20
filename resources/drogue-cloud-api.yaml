@@ -488,11 +488,12 @@ components:
       required: false
       description: |
         Labels selectors.
-        Labels are arbitrary <key>:<value> pairs that can be associated with a resource.
-        A selector matches labels values using equality, inequality and filtering
-        Selectors can also filter a key according to a set of values.
-        Lastly, selector can check the existence of a label key, ignoring the value.
-        To summarize gives 6 operations and their associated symbol :
+
+        Labels are arbitrary \<key\>:\<value\> pairs that can be associated with a resource.
+        A selector matches labels values using equality, inequality and filtering.
+        It can check the existence of a label key, ignoring the value.
+
+        To summarize, there are 6 available operations and their associated symbol :
           * equality: `=`
           * inequality: `!=`
           * filtering: `in`
@@ -501,15 +502,18 @@ components:
           * non-existence: `!<key>`
 
         For example :
-        ```
-        `zone=europe` # will match a label where the value for key `zone` is equal to `europe`.
-        `zone!=europe` will match all the labels where the value for key `zone` is not equal to `europe`.
-        `country in (france, germany)` will match all the labels where the value for key `country` is equal to `europe` or `asia`.
-        `country notin (spain, italy)` will match all the labels where the value for key `country` is not equal to `spain` or `italy`.
-        `power` will match all the labels where the key `power` exist, regardless of the value.
-        `!power` will match all the labels where the key `power` do not exist.
-        ```
+        `zone=europe` will match a label where the value for key `zone` is equal to `europe`.
 
+        `zone!=europe` will match all the labels where the value for key `zone` is not equal to `europe`.
+
+        `country in (france, germany)` will match all the labels where the value for key `country` is equal to `france` or `germany`.
+
+        `country notin (spain, italy)` will match all the labels where the value for key `country` is not equal to `spain` or `italy`.
+
+        `power` will match all the labels where the key `power` exist, regardless of the value.
+
+        `!power` will match all the labels where the key `power` do not exist.
+        
         Multiple selectors can be submited, separated with a coma. A coma implies a AND operation between selectors.
         This is modeled after the [kubernetes labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/).
       schema:
