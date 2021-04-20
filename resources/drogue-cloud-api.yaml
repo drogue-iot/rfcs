@@ -511,12 +511,15 @@ components:
         ```
 
         Multiple selectors can be submited, separated with a coma. A coma implies a AND operation between selectors.
-        This is modeled after the kubernetes labels : https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+        This is modeled after the [kubernetes labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/).
       schema:
         items:
           type: string
           description: URL encoded list of labels selectors.
-          example: ?labels=zone%europe,country%3Dspain,power+in+%28solar-pannel%2Cbattery%29,manufacturer+notin+%28nokia%2Csony%29
+      example: |
+        zone=europe, country=spain, power in (solar-pannel,battery), manufacturer notin (nokia,sony)
+
+        URL encoded form: ?labels=zone%3Deurope,country%3Dspain,power+in+%28solar-pannel%2Cbattery%29,manufacturer+notin+%28nokia%2Csony%29
 
 
   schemas:
