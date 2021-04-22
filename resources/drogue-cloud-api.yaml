@@ -537,7 +537,7 @@ components:
         id:
           type: string
         spec:
-          $ref: '#/components/schemas/ResourceSpec'
+          $ref: '#/components/schemas/DeviceSpec'
 
     ApplicationMembers:
       type: object
@@ -620,6 +620,54 @@ components:
         temp: 19
         luminosity: 55
 
+    DeviceSpec:
+      type: object
+      additionalProperties: true
+      description: A json object containing arbritrary data to attached to a device.
+      properties:
+        credentials:
+          $ref: '#/components/schemas/DeviceCredentials'
+
+    DeviceCredentials:
+        type: array
+        additionalProperties: false
+        items:
+          oneOf:
+             - $ref: '#/components/schemas/UserCredential'
+             - $ref: '#/components/schemas/PassCredential'
+             - $ref: '#/components/schemas/CertCredential'
+
+
+    UserCredential:
+      type: object
+      additionalProperties: false
+      description: username and password credentials.
+      properties:
+        user:
+          type: object
+          additionalProperties: false
+          properties:
+            usename:
+              type: string
+            password:
+              type: string
+
+    PassCredential:
+      type: object
+      description: password credential.
+      additionalProperties: false
+      properties:
+        pass:
+          type: string
+          example: verysecret
+
+    CertCredential:
+      type: object
+      description: The public key of the device X509 certificate.
+      additionalProperties: false
+      properties:
+        cert:
+          type: string
 
   responses:
       BulkAppCreationResponse:
