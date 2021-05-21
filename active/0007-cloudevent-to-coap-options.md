@@ -1,4 +1,4 @@
-# [Cloud] Mappings for Cloud Events and CoAP
+# [Cloud] Mappings for Cloud Event Attributes to CoAP Options
 
 The [CoAP protocol](https://datatracker.ietf.org/doc/html/rfc7252) uses [options](https://datatracker.ietf.org/doc/html/rfc7252#section-5.4), allowing the mapping of ["header-like values"](https://datatracker.ietf.org/doc/html/rfc7252#section-12.2) to option numbers ranging between 0-65535. This RFC is for defining the mapping between CoAP Options and Cloud Events.
 
