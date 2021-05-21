@@ -1,9 +1,8 @@
 # [Cloud] Mappings for Cloud Events and CoAP
 
-The [CoAP protocol](https://datatracker.ietf.org/doc/html/rfc7252) makes use of [options](https://datatracker.ietf.org/doc/html/rfc7252#section-5.4), which allow ["header-like values"](https://datatracker.ietf.org/doc/html/rfc7252#section-12.2) to be mapped to numbers ranging between 0-65535. This RFC is for defining said mapping between CoAP options and Cloud Events.
+The [CoAP protocol](https://datatracker.ietf.org/doc/html/rfc7252) uses [options](https://datatracker.ietf.org/doc/html/rfc7252#section-5.4), allowing the mapping of ["header-like values"](https://datatracker.ietf.org/doc/html/rfc7252#section-12.2) to option numbers ranging between 0-65535. This RFC is for defining the mapping between CoAP Options and Cloud Events.
 
-* Issue: 
-* PR: 
+* PR: https://github.com/drogue-iot/rfcs/pull/8
 
 Also see:
 
@@ -13,9 +12,9 @@ Also see:
 
 ## Motivation
 
-Since CoAP doesn't have the concept of a "header" like in other protocols, they allow us to use "options". These options are represented by numbers ranging from 0-65536, with some options having resrved definitions in the CoAP spec. 
+CoAP uses [Options](https://datatracker.ietf.org/doc/html/rfc7252#section-5.4) instead of the traditional headers we see in other protocols. These options are represented by option numbers ranging from 0-65536, with some options numbers having reserved definitions in the [CoAP specification](https://datatracker.ietf.org/doc/html/rfc7252). 
 
-With this document we want to associate certain options to Cloud Event fields (usage defined by [this RFC](https://github.com/pranav-bhatt/rfcs/blob/main/active/0003-cloud-events-mapping.md)).
+This document aims to associate specific options to Cloud Event fields (usage defined by [this RFC](https://github.com/pranav-bhatt/rfcs/blob/main/active/0003-cloud-events-mapping.md)).
 
 ## Glossary
 
