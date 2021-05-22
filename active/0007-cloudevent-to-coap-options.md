@@ -3,6 +3,7 @@
 The [CoAP protocol](https://datatracker.ietf.org/doc/html/rfc7252) uses [options](https://datatracker.ietf.org/doc/html/rfc7252#section-5.4), allowing the mapping of ["header-like values"](https://datatracker.ietf.org/doc/html/rfc7252#section-12.2) to option numbers ranging between 0-65535. This RFC is for defining the mapping between CoAP Options and Cloud Events.
 
 * PR: https://github.com/drogue-iot/rfcs/pull/8
+* SDK(Do tell me if this should be moved here, or stay linked to my account): https://github.com/pranav-bhatt/cloudevents-sdk-coap
 
 Also see:
 
@@ -51,11 +52,19 @@ According to [Section 12.2 in RFC7572](https://datatracker.ietf.org/doc/html/rfc
 
 ## Attributes mapping to CoAP Option Numbers
 
+|         Field         | Required(is this column needed?) | Option | Description |
+| --------------------- | -------- | ------ | ----------- |
+|          `id`         |          |  2048  | Added as Cloud Events sent for cloud-to-device communications include this field |
+|        `source`       |          |  2049  | Added as Cloud Events sent for cloud-to-device communications include this field. **Please take a look at [URI Options](https://datatracker.ietf.org/doc/html/rfc7252#section-5.10.1) to see if we can use those existing Options instead of creating a new mapping.**|
+|      `specversion`    |          |  2050  | Added as Cloud Events sent for cloud-to-device communications include this field. Always contains `1.0` |
+|         `type`        |          |  2051  | Type of Event, as provided by the device |
+|    `datacontenttype`  |          |Content-Format (12)| Defined by [Section 5.10.3 in RFC7572](https://datatracker.ietf.org/doc/html/rfc7252#section-5.10.3). Will be used to fill the `datacontenttype` field in the Cloud Event |
+|      `dataschema`     |          |  2052  | Schema of the payload |
+|        `subject`      |          |  2053  | Added as Cloud Events sent for cloud-to-device communications include this field |
+|         `time`        |          |  2054  | Added as Cloud Events sent for cloud-to-device communications include this field |
+
+## Mappings of Drogue IoT extension attributes to CoAP Option Numbers
+
 |         Field         | Required | Option | Description |
 | --------------------- | -------- | ------ | ----------- |
-|    `Content-Format`   |          |   12   | Defined by [Section 5.10.3 in RFC7572](https://datatracker.ietf.org/doc/html/rfc7252#section-5.10.3). Will be used to fill the `datacontenttype` field in the Cloud Event |
-| `Authorization token` |    ✓     |  2048  | This token will be sent to the Authorization service, which will return the [device id](#device-id) upon validation, which will be used to fill the `source` field in the Cloud Event.|
-|   `Type Information`  |          |  2049  | Type of Event, as provided by the device |
-|     `Data Schema`     |          |  2050  | Schema of the payload |
-|       `Subject`       |          |  2051  | Added as Cloud Events sent for cloud-to-device communications include this field |
-|        `Time`         |          |  2052  | Added as Cloud Events sent for cloud-to-device communications include this field |
+|      `auth-token`     |    ✓     |  2055  | This token will be sent to the Authorization service, which will return the [device id](#device-id) upon validation, which will be used to fill the `source` field in the Cloud Event.|
