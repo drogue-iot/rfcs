@@ -59,12 +59,12 @@ According to [Section 12.2 in RFC7572](https://datatracker.ietf.org/doc/html/rfc
 |   `specversion`   |         4202        |    string(uint?)    |        X       |     ✓    |                                                           Always contains  `1.0`                                                          |            Always contains  `1.0`            |
 |       `type`      |         4203        |        string       |        ✓       |     ✓    |                                                  Default value being `io.drogue.event.v1`                                                 |    Filled with value present in CloudEvent   |
 | `datacontenttype` | Content-Format (12) |        string       |        ✓       |     ✓    |                                               Default value being `application/octet-stream`                                              |    Filled with value present in CloudEvent   |
-|    `dataschema`   |         4205        |        string       |        ✓       |     X    |                                                                     -                                                                     |    Filled with value present in CloudEvent   |
-|     `subject`     |         4206        |        string       |      ✓(?)      |     X    | Contains the [channel](https://github.com/drogue-iot/rfcs/blob/main/active/0003-cloud-events-mapping.md#glossary) the device published to |     Filled with value present in CloudEvent     |
-|       `time`      |         4207        |        string       |        X       |     ✓    |                                                  Added at service creating the CloudEvent                                                 |   Added at service creating the CloudEvent   |
+|    `dataschema`   |         4204        |        string       |        ✓       |     X    |                                                                     -                                                                     |    Filled with value present in CloudEvent   |
+|     `subject`     |         4205        |        string       |      ✓(?)      |     X    | Contains the [channel](https://github.com/drogue-iot/rfcs/blob/main/active/0003-cloud-events-mapping.md#glossary) the device published to |     Filled with value present in CloudEvent     |
+|       `time`      |         4206        |        string       |        X       |     ✓    |                                                  Added at service creating the CloudEvent                                                 |   Added at service creating the CloudEvent   |
 
 ## Mappings of Drogue IoT extension attributes to CoAP Option Numbers
 
 | Attribute | Option | Option Value Format | Sent by device | Required |                                          Description                                          |
 |:---------:|:------:|:-------------------:|:--------------:|:--------:|:---------------------------------------------------------------------------------------------:|
-|   `cred`  |  4210  |        string       |        ✓       |     ✓    | Contains HTTP Auth style header. For eg: `Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==` |
+|   `cred`  |  4209  |        string       |        ✓       |     ✓    | Contains HTTP Auth style header. For eg: `Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==` |
