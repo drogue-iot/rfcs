@@ -52,19 +52,19 @@ According to [Section 12.2 in RFC7572](https://datatracker.ietf.org/doc/html/rfc
 
 ## Attributes mapping to CoAP Option Numbers
 
-|         Field         | Required(is this column needed?) | Option | Description |
-| --------------------- | -------- | ------ | ----------- |
-|          `id`         |          |  2048  | Added as Cloud Events sent for cloud-to-device communications include this field |
-|        `source`       |          |  2049  | Added as Cloud Events sent for cloud-to-device communications include this field. **Please take a look at [URI Options](https://datatracker.ietf.org/doc/html/rfc7252#section-5.10.1) to see if we can use those existing Options instead of creating a new mapping.**|
-|      `specversion`    |          |  2050  | Added as Cloud Events sent for cloud-to-device communications include this field. Always contains `1.0` |
-|         `type`        |          |  2051  | Type of Event, as provided by the device |
-|    `datacontenttype`  |          |Content-Format (12)| Defined by [Section 5.10.3 in RFC7572](https://datatracker.ietf.org/doc/html/rfc7252#section-5.10.3). Will be used to fill the `datacontenttype` field in the Cloud Event |
-|      `dataschema`     |          |  2052  | Schema of the payload |
-|        `subject`      |          |  2053  | Added as Cloud Events sent for cloud-to-device communications include this field |
-|         `time`        |          |  2054  | Added as Cloud Events sent for cloud-to-device communications include this field |
+|     Attribute     |        Option       | Option Value Format | Sent by device | Required |                                                        Device-to-Cloud description                                                        |          Cloud-to-Device description         |
+|:-----------------:|:-------------------:|:-------------------:|:--------------:|:--------:|:-----------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------:|
+|        `id`       |         4200        |        string       |        X       |     ✓    |                                                                     -                                                                     | Option required for cloud-to-device commands |
+|      `source`     |         4201        |        string       |       X        |     ✓    |            Filled with  [device id](https://github.com/drogue-iot/rfcs/blob/main/active/0003-cloud-events-mapping.md#device-id)           |    Filled with value present in CloudEvent   |
+|   `specversion`   |         4202        |    string(uint?)    |        X       |     ✓    |                                                           Always contains  `1.0`                                                          |            Always contains  `1.0`            |
+|       `type`      |         4203        |        string       |        ✓       |     ✓    |                                                  Default value being `io.drogue.event.v1`                                                 |    Filled with value present in CloudEvent   |
+| `datacontenttype` | Content-Format (12) |        string       |        ✓       |     ✓    |                                               Default value being `application/octet-stream`                                              |    Filled with value present in CloudEvent   |
+|    `dataschema`   |         4205        |        string       |        ✓       |     X    |                                                                     -                                                                     |    Filled with value present in CloudEvent   |
+|     `subject`     |         4206        |        string       |      ✓(?)      |     X    | Contains the [channel](https://github.com/drogue-iot/rfcs/blob/main/active/0003-cloud-events-mapping.md#glossary) the device published to |     Filled with value present in CloudEvent     |
+|       `time`      |         4207        |        string       |        X       |     ✓    |                                                  Added at service creating the CloudEvent                                                 |   Added at service creating the CloudEvent   |
 
 ## Mappings of Drogue IoT extension attributes to CoAP Option Numbers
 
-|         Field         | Required | Option | Description |
-| --------------------- | -------- | ------ | ----------- |
-|      `auth-token`     |    ✓     |  2055  | This token will be sent to the Authorization service, which will return the [device id](#device-id) upon validation, which will be used to fill the `source` field in the Cloud Event.|
+| Attribute | Option | Option Value Format | Sent by device | Required |                                          Description                                          |
+|:---------:|:------:|:-------------------:|:--------------:|:--------:|:---------------------------------------------------------------------------------------------:|
+|   `cred`  |  4210  |        string       |        ✓       |     ✓    | Contains HTTP Auth style header. For eg: `Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==` |
