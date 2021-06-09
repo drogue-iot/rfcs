@@ -67,4 +67,4 @@ According to [Section 12.2 in RFC7572](https://datatracker.ietf.org/doc/html/rfc
 
 | Attribute | Option | Option Value Format | Sent by device | Required |                                          Description                                          |
 |:---------:|:------:|:-------------------:|:--------------:|:--------:|:---------------------------------------------------------------------------------------------:|
-|   `cred`  |  4209  |        string       |        ✓       |     ✓    | Contains HTTP Auth style header. For eg: `Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==` |
+|   `cred`  |  4209  |        string       |        ✓       |     ✓    | Contains HTTP Auth style header conatining details such as the authentication type, and the username:password encoded in base64. For eg: `Basic ZGV2aWNlaWRAYXBwbmFtZTpwYXNzd29yZA==` where "deviceid@appname:password" has been encoded |
