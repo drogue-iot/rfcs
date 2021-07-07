@@ -123,14 +123,14 @@ Messages sent by an application to the *command endpoint*, for delivery to a dev
 
 The scoped ID of the device in the following format: `<application>/<device>`.
 
-Application and device IDs must be "URL encoded" to carry special characters. For example:
+Application IDs must be alphanumeric, and device IDs must be "URL encoded" to carry special characters. For example:
 
 | Application | Device   | Result |
 | ----------- | -------- | ------ |
 | `app`       | `device` | `app/device` |
 | `app`       | `foo/bar` | `app/foo%2Fbar` |
-| `app`       | `foo bar` | `foo%20bar` |
-| `app`       | `fööbär` | `f%C3%B6%C3%B6b%C3%A4r` |
+| `app`       | `foo bar` | `app/foo%20bar` |
+| `app`       | `fööbär` | `app/f%C3%B6%C3%B6b%C3%A4r` |
 | `äpp`       | `device` | 🛑 Not allowed: Application names must be DNS components |
 
 ## Examples
