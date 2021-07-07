@@ -59,7 +59,7 @@ endpoint must translate into a Cloud Event.
 | `type` | ✓ | Type information, as provided by the device. Defaults to `io.drogue.event.v1`. |
 | `datacontenttype` | ✓ | The mime type of the payload. As provided by the device. Defaults to `application/octet-stream`. |
 | `dataschema` | | The schema of the payload. As provided by the device. |
-| `subject` | | The "channel" the device published to. |
+| `subject` | ✓ | The "channel" the device published to. |
 | `time` | ✓ | The time the protocol endpoint picked up the message from the device. If the device wants to send along a timestamp with sensor measurements, then that would be part of the payload. |
 
 The summary would be:
