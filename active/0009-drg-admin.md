@@ -8,43 +8,51 @@ Drogue Cloud also allows an application to have multiple owners, and different p
 
 ## Commands
 
-We love to group commands based on their functionality so let's keep the subcommand for all the administration work to - drg `adm`. 
+We love to group commands based on their functionality so let's keep the subcommand for all the administration work to - drg `admin`. 
 
 ### Adding members
 
-`drg adm add --app <app_id> <username> --roles <reader/manager/admin>`
+`drg admin member add --app <app_id> <username> --roles <reader/manager/admin>`
 
 This command helps assign roles to another user. Here we would need to pass in the user id of the other user and the permission we would like to give him.
 
-`drg adm list --app <app_id>`
+`drg admin member list --app <app_id>`
 
-This command prints all the members with access to this application and their roles.
+This command prints all the members with access to this application and their roles. The output of the above commands would be 
+|User | Roles |
+|-----|-------|
+|abc  | Manager | 
+|def  | Reader |
+
+`drg admin member edit --app <app_id>`
+
+Similar to 'device' edit, member information can be edited in YAML.
 
 ### API Keys management
 
-`drg adm keys show` -> Displays the list of API keys.
+`drg admin keys show` -> Displays the list of API keys.
 
-`drg adm keys create` -> Creates a new key for the user.
+`drg admin keys create` -> Creates a new key for the user.
 
-`drg adm keys delete <prefix>` -> Deletes the API Key by the prefix.
+`drg admin keys delete <prefix>` -> Deletes the API Key by the prefix.
 
 These commands are similar to the subcommands offered in `context` functionality.
 
 ### Transfer ownership 
 
-`drg adm transfer --app <app_id> <user_id>`
+`drg admin transfer start <app_id> --to <username>`
 
 This initiates the process of transferring an application. 
 
 
-`drg adm transfer --app <app_id> -d`
+`drg admin transfer delete <app_id>`
 
-By adding an -d or --delete flag we can cancel the ownership transfer process.
+Users can cancel the ownership transfer process.
 
 
-`drg adm transfer --app <app_id> -a`
+`drg admin transfer accept <app_id>`
 
-By adding an -a or --accept flag, the user can accept the ownership of an application.
+The user can accept the ownership of an application.
 
 ## Implementation
 
