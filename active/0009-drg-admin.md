@@ -40,7 +40,7 @@ These commands are similar to the subcommands offered in `context` functionality
 
 ### Transfer ownership 
 
-`drg admin transfer start <app_id> --to <username>`
+`drg admin transfer start <app_id> <username>`
 
 This initiates the process of transferring an application. 
 
