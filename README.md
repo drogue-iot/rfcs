@@ -9,6 +9,7 @@ Use this process whenever you think it makes sense to spend some time on a desig
 ## Proposing a change
 
 * Propose a change by creating a PR
+* The RFC number is the number of the PR
 * Discuss and refine the proposal
 * Merge or close the process
 * Each merged proposal should have an issue for tracking progress of the implementation

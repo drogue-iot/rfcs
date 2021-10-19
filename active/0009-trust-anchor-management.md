@@ -2,6 +2,8 @@
 
 This document can be considered an initial step in the wider topic of "Device provisioning".
 
+* PR: https://github.com/drogue-iot/rfcs/pull/9
+
 ## Overview
 
 The X.509 certificates are versatile. In the context of IoT, they can provide a better and more scalable method to authenticate devices. Drogue Cloud already has support for authentication of devices using X.509 certs, now we have the opportunity to leverage our elegant command-line client - DRG for managing cert and keys.
