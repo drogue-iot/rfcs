@@ -29,9 +29,20 @@ If that is the case, the message will be processed. Otherwise, the message will 
 No new mechanism should be created (unless absolutely necessary) to evaluate if the gateway is authorized for the device
 it wants to act on.
 
+## Definitions
+
+In the following examples, we will use:
+
+* `ble-device` - as a name for a device which is not directly connected to Drogue Cloud, but through a gateway device.
+* `setTemperature` – as an example command
+
 ## Detailed design
 
-### Indication using the topic name
+### Telemetry
+
+One aspect of this is telemetry data. Data sent from the device to the cloud.
+
+#### Indication using the topic name
 
 **NOTE:** This would work with MQTT v3.1.1 and MQTTv5.
 
@@ -41,7 +52,7 @@ However, it currently is not implemented that way.
 My proposal is to actually follow that implementation, and only use the first segment of the topic as "channel" as
 defined. And use the second path segment as device alias. Ignoring all further segments.
 
-### Indication using an MQTTv5 user property
+#### Indication using an MQTTv5 user property
 
 **NOTE:** This would only work with MQTT v5.
 
@@ -59,7 +70,7 @@ Cons:
 * Would only be available using MQTT v5, so it could only be an addition
 * Is probably a bit more verbose than using a device specific topic name when not using topic aliases
 
-### Authorization
+#### Authorization
 
 For the authorization, we need to create a new API in the authentication service, as current calls are all
 authenticating and authorizing at the same time, when connecting.
@@ -72,12 +83,12 @@ gateway as an allowed gateway.
 
 The service returns "ok" or "not ok" back to the caller (endpoint), which can then act on the outcome.
 
-### Acceptance
+#### Acceptance
 
 If the request is accepted, the endpoint passes the message on the downstream sink, using the device ID instead of the
 gateway ID in the process.
 
-### Rejection
+#### Rejection
 
 If the request is rejected, the behavior differs based on the MQTT version and the QoS.
 
@@ -89,6 +100,14 @@ If the request is rejected, the behavior differs based on the MQTT version and t
 | 5            | 0   | Message is dropped |
 | 5            | 1   | `PUBACK` sent with 135 "Not authorized" |
 | 5            | 2   | Connection is closed with 155 "QoS not supported" |
+
+### Commands
+
+Another aspect of this is commands, sent from the cloud to devices.
+
+#### Subscribe for commands
+
+See "alternatives" below.
 
 ## Breaking changes
 
@@ -108,3 +127,115 @@ a big difference.
 
 On the other hand, we already devices to use `<channel>/<device>` for this, so we should stick to the plan, unless
 there are good reasons not to.
+
+### Command topic structure
+
+A device can currently subscribe for commands using the following filter:
+
+    command/inbox/#
+
+This will result in a subscription for all commands. The device will then receive commands as:
+
+    command/inbox/<command>
+
+For example:
+
+    command/inbox/setTemperature
+
+For the gateway use-case, additionally the target device needs to be sent. This information is required by the
+gateway to route this command onwards to the actual receiver. In general, a gateway should be able to request
+commands for all its devices, or just for a specific set of devices.
+
+#### Device in hierarchy
+
+One way to encode this information is:
+
+    command/inbox/<device>/<command>
+
+A possible way to subscribe to this would be using the following filter for all devices:
+
+    command/inbox/+/#
+
+And using the following, for a specific device:
+
+    command/inbox/ble-device/#
+
+This follows the hierarchical idea of MQTT.
+
+The downside of this is however, that the path segment at the third position changes, depending on the case. This
+isn't a problem per se, as you can find out what part contains which information, by the number of path segments being
+present.
+
+Also, there is the question, what devices that subscribe to `command/inbox/#` receive? Judging from the MQTT filter,
+they should receive commands for its own device, as well as for devices it acts on behalf of. However, requesting
+commands for other devices should be an explicit operation, rather than an implicit one.
+
+#### Device in hierarchy, with a gap
+
+One alternative could be, to change the topic structure to the following, for all use cases:
+
+    command/inbox/<device>/<command>
+
+In case the actual device is targeted, the `<device>` part would remain empty. So for the actual device this would be:
+
+    command/inbox//setTemperature
+
+And for a proxied device of the gateway, it would be:
+
+    command/inbox/ble-device/setTemperature
+
+For its own events, the device would need to subscribe to:
+
+    command/inbox//#
+
+For devices, it acts on behalf of, it needs to subscribe to:
+
+    command/inbox/+/#
+
+Or, for a specific device:
+
+    command/inbox/ble-device/#
+
+This would keep the hierarchical idea of MQTT, but also keep a stable meaning to the different path segments.
+
+#### Swap command with device
+
+Instead of:
+
+    command/inbox/<command>
+    command/inbox/<device>/<command>
+
+We could use:
+
+    command/inbox/<command>
+    command/inbox/<command>/<device>
+
+This would result in a stable meaning of the path segments. However, it would disrupt the hierarchical meaning of
+MQTT topics. With that, a gateway would need to use the following filter, to subscribe to a single device:
+
+    command/inbox/+/ble-device
+
+Again, the following subscription would be problematic, as it implicitly requests commands for proxied devices:
+
+    command/inbox/#
+
+#### Proposal
+
+We make another breaking change, follow alternative [Device in hierarchy, with a gap](#device-in-hierarchy-with-a-gap)
+and change the overall pattern to:
+
+    command/inbox/<device>/<command>
+
+Leaving a gap (empty path) for the `<device>` segment, if it targets the actual device.
+
+With that, we can have a stable meaning to the path segments, and way to explicitly requesting the proxied devices
+commands:
+
+| Filter | Topic | Matches? |
+| ------ | ----- | -------- |
+| `command/inbox//#` | `command/inbox//setTemperature` | Y |
+| `command/inbox//#` | `command/inbox/ble-device/setTemperature` | N |
+| `command/inbox/+/#` | `command/inbox//setTemperature` | N |
+| `command/inbox/+/#` | `command/inbox/ble-device/setTemperature` | Y |
+| `command/inbox/other/#` | `command/inbox//setTemperature` | N |
+| `command/inbox/other/#` | `command/inbox/ble-device/setTemperature` | N |
