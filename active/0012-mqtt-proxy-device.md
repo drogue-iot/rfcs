@@ -109,6 +109,15 @@ Another aspect of this is commands, sent from the cloud to devices.
 
 See "alternatives" below.
 
+In any case:
+
+* A gateway device should be able to subscribe for all devices it controls, or just for a specific
+* Subscribing to proxied devices should be an explicit operation (whether that is all or just some)
+* If a device subscribes to all or a specific device, it must only receive commands for that devices that it is 
+  allowed to handle. Even that includes none at the moment of subscribing, the subscription should still be granted.
+  The device will simply receive nothing as long as the permissions are missing, or automatically stops receiving
+  when the permission gets revoked.
+
 ## Breaking changes
 
 ### Limiting the topic name/channel
