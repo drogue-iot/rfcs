@@ -207,6 +207,8 @@ Or, for a specific device:
 
 This would keep the hierarchical idea of MQTT, but also keep a stable meaning to the different path segments.
 
+NOTE: What would happen if the user still subscribes to `command/inbox/#`?
+
 #### Swap command with device
 
 Instead of:
