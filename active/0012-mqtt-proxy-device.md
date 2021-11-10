@@ -4,7 +4,7 @@ A device, connected via MQTT, should be able to send messages on behalf of anoth
 able to receive commands on behalf of another device.
 
 * Issue: https://github.com/drogue-iot/drogue-cloud/issues/135
-* PR: https://github.com/drogue-iot/rfcs/pull/13
+* PR: https://github.com/drogue-iot/rfcs/pull/12
 
 ## Motivation
 
