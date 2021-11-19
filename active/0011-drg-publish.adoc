@@ -1,0 +1,48 @@
+= Drg publish
+
+== The idea
+
+It would be nice to use `drg publish` to publish some telemetry data. It helps with debugging and saves time
+when writing device code (reduce the number or firmware writes).
+
+== The problem
+
+Drg is useful because it takes care of all the openID steps for you, making sure you always a valid tokens.
+It also helps finding out the various endpoints. Othen than this, it's mostly a `curl` wrapper. 
+
+So a publish command would be :
+
+[source,shell]
+----
+drg publish <app> <topic> device1:verysecret '{"temp" : "42" }'
+----
+
+where the plain curl is : 
+
+[source,shell]
+----
+echo '{"temp":42}' | http --auth 'device1@<app>:hey-rodney' POST https://http.sandbox.drogue.cloud/v1/<topic>
+----
+
+While the drg alternative is shorter, it' s still specific enough that you won' t come up with that command on your own.
+So if it's going to be copy and paste from elsewhere, the curl is good enough.
+
+And that is without mentionning the several ways of publishing that exist. Throws coap, mqtt, x509 auth into the mix and it makes it even more complicated.
+
+
+== Ulf idea
+
+Store all of this information in a `device context`, like it's done for the cloud setup.
+Ideally, `drg` would be able to read `drogue-device` config files.
+
+```
+drg config set-publish-context <deviceId> <password> <topic>
+drg config set-default-app <app>
+drg publish '{"temp" : "42" }'
+```
+
+Or load a drogue-device config :
+```
+drg publish -p device.toml -f payload/json/file
+```
+the config file could also be loaded from $PWD.
