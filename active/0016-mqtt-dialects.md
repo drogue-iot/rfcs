@@ -50,7 +50,7 @@ specWithOptions:
   mqtt:
     dialect:
       type: drogue/v1
-      complexTopics: true
+      someBooleanOption: true
 
 specWithDefaults:
   mqtt:
@@ -66,7 +66,7 @@ specWithOptions:
     dialect:
       drogue:
         v1:
-          complexTopics: true
+          someBooleanOption: true
 
 specWithDefaults:
   mqtt:
@@ -82,7 +82,7 @@ specWithOptions:
   mqtt:
     dialect:
       drogue/v1:
-        complexTopics: true
+        someBooleanOption: true
 
 specWithDefaults:
   mqtt:
