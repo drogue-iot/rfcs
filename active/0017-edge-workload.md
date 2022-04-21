@@ -7,7 +7,9 @@
 In Drogue IoT, we don't have an edge orchestration layer, as we intend to integrate with an existing solution for edge
 workload distribution and management.
 
-However, we do want to distribute edge workload, and manage this, possibly through Drogue IoT from the cloud side.
+However, we do want to distribute edge workload, and manage this, possibly through Drogue IoT, from the cloud side.
+
+See below for reason on [why we want to focus on Kubernetes](#dont-align-on-kubernetes).
 
 ### Example use cases
 
@@ -70,6 +72,9 @@ spec:
       feature1: "ns=2;s=Temperature"
       feature2: "ns=2;s=Pressure"
 ```
+
+It is important that this definition does not contain any Kubernetes specifics. Just pure use case specific
+configuration.
 
 ### Deployment plan
 
@@ -135,6 +140,34 @@ This RFC brings no breaking changes.
 
 ## Alternatives
 
+### Don't align on Kubernetes
+
+Instead of aligning on Kubernetes, as workload distribution, we could find an alternative.
+
+We could directly reconcile workload to some edge orchestration API (e.g. ioFog, Kanto, ...). However, this would
+mean that all reconcilers (OPC UA, BLE, ...) would need to understand those APIs and semantics. The code of
+communicating with those APIs would be spread through the code of the reconcilers. Replacing that with an alternate
+implementation might become rather tricky. It also wouldn't allow for much "custom" or "addon" functionality by
+user applications.
+
+So instead, we could create our own deployment model, and reconcile this into e.g. Kubernetes or any other. Use case
+specific reconcilers (like the OPC UA connector) would reconcile into this model, instead of directly talking to
+some edge orchestration API. The downside of this approach is, that we would need to create and maintain or own
+deployment model. With our own semantics. Which, most likely, would just be a subset of all the others. That approach
+doesn't seem to bring a lot of benefit.
+
+Assuming that we will see more Kubernetes on the edge in the future, seems to be more reasonable to focus on
+Kubernetes as the deployment model. Let use case specific workload reconcile into the Kubernetes models, and just
+synchronise the Kubernetes resources down to the edge. By using an existing edge orchestration layer, based on
+Kubernetes.
+
+We probably target [OCM](https://open-cluster-management.io/) as a first Kubernetes target. However, whoever wants
+to implement a different target, could simply create a new Kubernetes reconciler and re-use all the use case specific
+edge workload reconcilers.
+
+Assuming someone would like to implement a non-Kubernetes based approach. This would still be possible, but require
+to re-implement the use case specific reconcilers too. If there is a benefit in that, then there is a way.
+
 ### Directly write Kubernetes workload
 
 Instead of rendering Kubernetes workload and then actually writing Kubernetes resources in a second step, we would
@@ -163,12 +196,3 @@ Alternatives for this field could be:
 * `.spec.kubernetes` - Shorter, easier to handle with the current `dialect!` macro. Doesn't make it clear what "kubernetes" actually means.
 * `.spec.workload` - Would limit "workload" to Kubernetes only.
 
-### Don't align on Kubernetes
-
-Instead of aligning on Kubernetes as workload distribution, we could find an alternative.
-
-That may bring some benefits on the overall size of the edge infrastructure deployment. However, that will also make
-it much more complicated and specialized.
-
-As we don't want to create out own edge orchestration later, we would need to adopt another deployment model anyway.
-However, even on the edge, Kubernetes seems to be most versatile and future-proof model.
