@@ -1,12 +1,12 @@
-= [Cloud] Firmware builds
+# [Cloud] Firmware builds
 
-== Motivation
+## Motivation
 
 We currently have the capability of delivering firmware updates over the air to any device capable of using the telemetry and command APIs. We also have a protoype for building firmware and storing it in the OCI registry. 
 
 This RFC is about generalizing the firmware build and fitting into Drogue Cloud, so that users of Drogue IoT have a path from source to firmware for all devices, which in turn enables gitops-style management of IoT devices.
 
-== High level Goals
+## High level Goals
 
 * A schema for specifying firmware build for device firmware
 * An API for triggering firmware builds for applications and devices
@@ -14,7 +14,7 @@ This RFC is about generalizing the firmware build and fitting into Drogue Cloud,
 
 When implemented, Drogue Cloud (Drogue Ajour) will have the ability to build and deliver firmware to devices in a CD pipeline.
 
-== Design
+## Design
 
 The build system will be based on containers Tekton pipelines running on a Kubernetes cluster. The resulting artifacts can be stored in either an Eclipse Hawkbit registry, or a container registry.
 
@@ -26,7 +26,7 @@ The design is split into two parts:
 * Build triggering - The API for triggering the build.
 * Build pipeline - Running the build.
 
-=== Build configuration
+### Build configuration
 
 The newly introduced `.spec.firmware` section of `Application` and `Device` is modified to cover build settings in addition to registry settings:
 
@@ -74,7 +74,7 @@ status:
 ```
 
 
-=== API
+### API
 
 A new component, `drogue-ajour-api` implements an API for triggering the builds. The API looks like this:
 
@@ -95,14 +95,14 @@ POST /api/builds/v1alpha1/apps/{appId}/devices/{deviceId}/trigger
 If the devices does not exist or does not have a firmware definition, 404 is returned. Otherwise the build is triggered according to the firmware spec.
 
 
-==== Authentication and Authorization 
+#### Authentication and Authorization 
 
 API requests require a successful authentication using OIDC with the SSO instance configured for the API. Authorization requires
 the `trigger-build` claim to be present for the authenticated user in order for the build to be triggered.
 
 Credentials for pushing firmware to the Hawkbit or OCI registry are configured as part of the API deployment, and is passed to the tekton pipelines that runs the build.
 
-=== Running the build
+### Running the build
 
 Builds are run as Tekton Pipelines, and consists of three tasks:
 
