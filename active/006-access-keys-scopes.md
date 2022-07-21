@@ -1,29 +1,54 @@
 Add scopes to Access Keys
 
 
-The current access keys defined in drogue cloud have the same permission granularity as their owner have. 
-One may want to give access to drogue cloud to a third party app without trusting it with write access 
-on all the other apps. 
+The current roles defined in drogue cloud have a permission granularity implemented in levels, where each level include all the permissions defined in the level above.
 
-So here is a proposed list of scopes that may be attached to an access key : 
+This prevents for being able to read devices data but not publish commands, and so on. 
 
-Create / delete access tokens
-Create / edit / delete applications
+One may want to give access to drogue cloud to a third party appto consume events without trusting it with devices credentials data.  
 
-Specific per apps :
-  Edit application members
-  Create / edit / delete devices
-  Read application data
-  Read events 
-  Write commands
+Here i propose to redefine the matrix of roles and permission, and allow a user to have more than one role. 
 
-For the per app scopes, we add a optional list of Application IDs to which those scopes apply.
-Note : there is one list of apps per access key. If you want to have differents scopes for app A and app B then you should create 2 access keys. However you can create a key that allow only to read and write commands for apps A and B.
+### Roles/Scopes and associated permissions
 
-## Implementation 
+- Subscribe
+  - can read events (WS/MQTT integration)
+- Publish
+  - can send commands to devices
+- Read
+  - Can read devices and applications resources
+- Manage
+  - Can create/read/modify devices and modify application.
+- Admin
+  - Can edit members of an app and delete the app
 
-During the authN process, the scopes for the token would be attached to the `UserInformation` object that is passed 
-to the authZ service. The authZ service would then math the scopes to the current operations.
+A user can have multiple roles for an application: 
+```json
+{
+  "resourceVersion": "3e4f352f-a238-4233-ae3c-cd0daef235ff",
+  "members": {
+    "admins": [
+        "ctron",
+        "dejanb"
+     ],
+     "publisher": [
+       "jbtrystram",
+       "dejanb"
+     ]
+   }
+}
+```
 
-If an Oauth bearer token was used for authentication, we automatically match the "All" permission.
-For the anonymous user, we only set the read only scopes
+### Access tokens
+
+Users should be able to creates access tokens that have less 
+permission than their owner have.
+As it's not practical to maintain a reverse DB with which apps 
+a user have roles to, access tokens
+could contain claims.
+The claims are checked against the application member list using
+a AND operation, so one cannot use claims to escalate permissions.
+
+## Discussion 
+
+=> can anyone logged in create an app and be the owner ?
