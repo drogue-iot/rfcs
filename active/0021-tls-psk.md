@@ -51,6 +51,10 @@ Pre-shared keys themselves does not have any expiry built in, and for updating k
 
 Multiple pre-shared keys may be specified.
 
+#### Is a PSK the same as a password?
+
+Kind of, but there is a subtle difference: the pre-shared key needs to be input into the TLS handshake. This means that the endpoints need to retrieve the key from the authentication service and present it to OpenSSL during the handshake. The hashed passwords stored in the authentication service would not work for this purpose. To clearly communicate their different use to passwords, and to ensure that these are not conflicting, and can also be used as a supplement, pre-shared keys should be separate from regular passwords.
+
 ### Key selection
 
 Upon authentication a device, the following rules are applied for PSK credentials:
