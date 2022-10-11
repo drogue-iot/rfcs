@@ -39,17 +39,20 @@ Devices that wish to authenticate using TLS-PSK must have the following configur
 
 ```yaml
 spec:
-  credentials:
-    - psk:
-        key: mysecret
-        validity: # Optional
-          notBefore: 2022-10-06T09:11:17Z
-          notAfter:  2022-10-07T09:11:17Z
+  authentication:
+    credentials:
+      - psk:
+          key: base-64 encoded key
+          validity: # Optional
+            notBefore: 2022-10-06T09:11:17Z
+            notAfter:  2022-10-07T09:11:17Z
 ```
 
 Pre-shared keys themselves does not have any expiry built in, and for updating keys, a validity range can be set. The terms used for validity originates from the X.509 RFC.
 
 Multiple pre-shared keys may be specified.
+
+NOTE: In the future, the plan is to rename `.spec.credentials` to `.spec.authentication`. 
 
 #### Is a PSK the same as a password?
 
