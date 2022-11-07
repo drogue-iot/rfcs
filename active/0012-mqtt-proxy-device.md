@@ -162,17 +162,13 @@ Assume you have a device `device1`, which is connected to a gateway `gateway1`. 
 `setTemperature`.
 
 | Filter | Command | Topic |
-| ------ | ----- | -------- |
-
+| ------ | ------- | ----- |
 | `command/inbox/#` | Send command to `gateway1` | `command/inbox//setTemperature` |
 | `command/inbox/#` | Send command to `device1` | `command/inbox/device1/setTemperature` |
-
 | `command/inbox//#` | Send command to `gateway1` | `command/inbox//setTemperature` |
 | `command/inbox//#` | Send command to `device1` | Not received |
-
 | `command/inbox/device1/#` | Send command to `gateway1` | Not received |
 | `command/inbox/device1/#` | Send command to `device1` | `command/inbox/device1/setTemperature` |
-
 | `command/inbox/gateway1/#` | Send command to `gateway1` | `command/inbox/gateway1/setTemperature` – Using the explicit device ID of the gateway in the filter will also result in the explicit device ID in the published topic |
 
 ## Breaking changes
