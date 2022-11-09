@@ -5,7 +5,7 @@ The current roles defined in drogue cloud have a permission granularity implemen
 
 This prevents for being able to read devices data but not publish commands, and so on. 
 
-One may want to give access to drogue cloud to a third party appto consume events without trusting it with devices credentials data.  
+One may want to give access to drogue cloud to a third party appto consume events without trusting it with devices credentials data.
 
 Here i propose to redefine the matrix of roles and permission, and allow a user to have more than one role. 
 
@@ -44,10 +44,27 @@ A user can have multiple roles for an application:
 Users should be able to creates access tokens that have less 
 permission than their owner have.
 As it's not practical to maintain a reverse DB with which apps 
-a user have roles to, access tokens
-could contain claims.
+a user have roles to, access tokens could contain claims.
 The claims are checked against the application member list using
 a AND operation, so one cannot use claims to escalate permissions.
+
+Access token proposed strucutre
+```yaml
+description: String
+scopes:
+  applications:
+    - example-app:
+      - subscribe
+      - read
+    - anotherApp:
+      - admin
+      - manage
+  tokens:
+    - create
+    - read
+    - delete
+```
+
 
 ## Discussion 
 
