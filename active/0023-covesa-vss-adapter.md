@@ -19,6 +19,10 @@ There are multiple ways to build VSS on top of Drogue IoT, but in this document 
 
 NOTE: Using Drogue Cloud as a connectivity layer is out of scope for this RFC. Defining mapping of the [VISSv2 transport layer](https://www.w3.org/TR/viss2-transport/) using Drogue Cloud is a future task.
 
+## Outcome
+
+The initial outcome of this work is a tool that can read the VSS files (.vspec) and generate the Dopplegänger resources to represent it in a digital twin.
+
 ## Terminology
 
 A _Thing_ is a digital representation in Drogue Dopplegänger that may represent a sensor or some value or a relationship to other things.
