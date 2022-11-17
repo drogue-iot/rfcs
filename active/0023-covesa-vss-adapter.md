@@ -91,6 +91,7 @@ metadata:
   annotations:
     vss/unit: "km/h"
     vss/type: "sensor"
+    vss/datatype: "float"
     vss/description: "Vehicle speed."
 schema:
   json: {
@@ -133,6 +134,7 @@ metadata:
   name: mycar/vehicle/cabin/doorcount
   annotations:
     vss/type: "attribute"
+    vss/datatype: "uint8"
     vss/description: "Number of doors in vehicle."
 schema:
   json: {
