@@ -14,13 +14,13 @@ Here I propose to redefine the matrix of roles and permission, and allow a user 
 - Publish: send commands to devices
 - Read: read devices and applications resources
 - Manage: create/read/update devices and read/update application.
-- Admin: All, excluding transferring the app ownership
+- Admin: All, excluding transferring the app ownership and deleting an app.
 
 ### Permission table
 
 |                  |           | **Admin** | **Manager** | **Reader** | **Subscriber** | **Publisher** | **Owner** |
 |------------------|-----------|-----------|-------------|------------|----------------|---------------|-----------|
-| **Applications** | Delete    | OK        |             |            |                |               | OK        |
+| **Applications** | Delete    |           |             |            |                |               | OK        |
 |                  | Read      | OK        | OK          | OK         |                |               | OK        |
 |                  | Write     | OK        | OK          |            |                |               | OK        |
 |                  | Members   | OK        |             |            |                |               | OK        |
@@ -85,6 +85,9 @@ claims:
     - read
     - delete
 ```
+
+NOTE : it should use application IDs instead of names. To avoid
+getting access to a resource after it was created.
 
 ### Verification flow
 
