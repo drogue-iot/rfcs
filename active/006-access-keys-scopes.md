@@ -1,6 +1,4 @@
-Add scopes to Roles 
-
-# Current limitation
+# Current limitations
 
 The current roles defined in drogue cloud have a permission granularity implemented in levels, where each level include all the permissions defined in the level above.
 
@@ -9,23 +7,30 @@ This prevents for being able to read devices data but not publish commands, and 
 One may want to give access to drogue cloud to a third party application (through an access token) to consume events without trusting it with devices credentials data for example.
 
 Here I propose to redefine the matrix of roles and permission, and allow a user to have more than one role.
-This would also remove the `owner` field from apps, as it would be saved in the `members`.
 
 ### Roles/Scopes and associated permissions
 
 - Subscribe: read events (WS/MQTT integration)
-- Command: send commands to devices
+- Publish: send commands to devices
 - Read: read devices and applications resources
 - Manage: create/read/update devices and read/update application.
-- Admin: edit members of an app and delete the app
-- Owner: all the above
+- Admin: All, excluding transferring the app ownership
 
-Then there are a couple of roles that are not tied to a specific application :
-- Create: create applications
-- Tokens
-  - create
-  - read
-  - delete
+### Permission table
+
+|                  |           | **Admin** | **Manager** | **Reader** | **Subscriber** | **Publisher** | **Owner** |
+|------------------|-----------|-----------|-------------|------------|----------------|---------------|-----------|
+| **Applications** | Delete    | OK        |             |            |                |               | OK        |
+|                  | Read      | OK        | OK          | OK         |                |               | OK        |
+|                  | Write     | OK        | OK          |            |                |               | OK        |
+|                  | Members   | OK        |             |            |                |               | OK        |
+|                  | Subscribe | OK        |             |            | OK             |               | OK        |
+|                  | Command   | OK        |             |            |                | OK            | OK        |
+|                  | Transfer  |           |             |            |                |               | OK        |
+| **Devices**      | Create    | OK        | OK          |            |                |               | OK        |
+|                  | Delete    | OK        | OK          |            |                |               | OK        |
+|                  | Write     | OK        | OK          |            |                |               | OK        |
+|                  | Read      | OK        | OK          | OK         |                |               | OK        |
 
 A user can have multiple roles for an application:
 ```json
@@ -38,53 +43,78 @@ A user can have multiple roles for an application:
         "subscribe"
      ],
      "jbtrystram": [
-       "admin",
-       "manage"
+       "admin"
      ], 
     "dejanb": [
       "subscribe"
-    ], 
-    "jcrossley": [
-      "owner"
     ]
    }
 }
 ```
 
-### Access tokens
+Then there are a few of roles that are not tied to a specific application :
+- Create: create applications
+- Tokens
+  - create
+  - read
+  - delete
 
-Users should be able to creates access tokens that have less 
-permission than their owner have.
-When creating an access token, the user can select permissions for applications. 
-When authenticating (and on token creation), the token claims are checked against the application member list using
-a AND operation, so one cannot use claims to escalate permissions.
+For those I propose to always allow when authenticating with an Oauth Token and limit them when using PATs.
 
-Access token proposed structure
+### Personnal Access tokens
+
+Users should be able to create access tokens that have less permission than their owner have.
+When creating an access token, the user can select permissions claims.
+As the PAT service does not have a postgreSQL client it cannot verifies the permissions so these are just claims.
+
+Access token proposed structure :
 ```yaml
 description: String
-scopes:
-  create: boolean # allow to create tokens or not
+claims:
+  create: boolean # allow to create applications
   applications:
     - example-app:
-        - subscribe
-        - read
-        - command
-        - manage
         - admin
     - eclipsecon-hackathon:
         - publish
         - subscribe
     - myapp:
-        - owner
+        - read
   tokens: # allow access token management.
     - create
     - read
     - delete
 ```
 
-The `scope` field can directly be deserialised as a rust Struct and be included with `UserInformation` when querying the authentication service.
-Services can then use this info to allow/deny the request.
+### Verification flow
 
-### Create application with bearer Oauth token
-OAuth tokens bearers are always allowed to create applications.
+```
+         ┌───────────────────┐
+         │                   │
+      2  │      KeyCloak     │
+         │                   │
+         └───▲────────┬──────┘
+             │        │
+             │        │ User Information
+             │        │
+          PAT│        │ Some(Claims)                
+             │        │
+             │        │                        2
+           ┌─┴────────▼───────┐  User     ┌────────────────┐
+           │                  ├───────────►                │
+           │                  │           │                │
+           │  Authorization   │           │PostgreSQL      │
+           │                  │           │                │
+           │                  ◄───────────┤                │
+           └──────────────────┘  Roles    └────────────────┘
+
+            Roles AND Claims
+     3             =
+                 Outcome
+```
+
+When authenticating, the token claims are retrieved then checked against the application member list using
+a AND operation, so one cannot escalate permissions.
+The `claims` field can directly be deserialised as a rust Struct and be included with `UserInformation` when querying keycloak.
+Services can then use this info to allow/deny the request.
 
